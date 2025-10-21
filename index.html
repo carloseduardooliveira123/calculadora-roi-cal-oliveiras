@@ -4,724 +4,337 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROI Tracker Cal Oliveiras</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-        .font-montserrat { font-family: 'Montserrat', sans-serif; }
-        #root { min-height: 100vh; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #8D927D 0%, #493928 100%); min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+        .card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header { background: rgba(255,255,255,0.95); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: #313128; font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; }
+        h2 { color: #313128; font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; }
+        .btn { width: 100%; background: linear-gradient(135deg, #8D927D, #493928); color: white; border: none; padding: 1rem; border-radius: 0.75rem; font-weight: bold; font-size: 1.125rem; cursor: pointer; margin-top: 0.5rem; }
+        .btn:hover { opacity: 0.9; }
+        .btn-secondary { background: white; border: 2px solid #8D927D; color: #313128; }
+        .btn-success { background: #10b981; }
+        .btn-danger { background: #ef4444; }
+        input, select { width: 100%; padding: 0.75rem; border: 2px solid #8D927D; border-radius: 0.5rem; font-size: 1rem; margin-top: 0.5rem; }
+        label { display: block; font-size: 0.875rem; font-weight: bold; color: #313128; margin-top: 1rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .result { background: #f0f4f1; padding: 1.5rem; border-radius: 0.75rem; text-align: center; margin: 1rem 0; }
+        .result-big { font-size: 2.5rem; color: #8D927D; font-weight: bold; }
+        .semaforo { padding: 1rem; border-radius: 0.75rem; text-align: center; margin-bottom: 1rem; color: white; font-weight: bold; }
+        .verde { background: #10b981; }
+        .amarelo { background: #f59e0b; }
+        .vermelho { background: #ef4444; }
+        .hide { display: none; }
+        .nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1rem; }
+        .nav-btn { background: white; border: 2px solid #8D927D; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: pointer; font-size: 0.875rem; font-weight: bold; color: #313128; }
+        .nav-btn.active { background: #8D927D; color: white; }
+        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #8D927D 0%, #493928 100%); display: flex; align-items: center; justify-content: center; color: white; z-index: 1000; }
+        .splash-content { text-align: center; }
+        .logo { font-size: 5rem; margin-bottom: 1rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <div id="splash" class="splash">
+        <div class="splash-content">
+            <div class="logo">🏢</div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Cal Oliveiras</h1>
+            <p style="opacity: 0.9;">Corretor Particular</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
 
-        const App = () => {
-            const [screen, setScreen] = useState('splash');
-            const [user, setUser] = useState(null);
-            const [empreendimentos, setEmpreendimentos] = useState([]);
-            const [selectedEmp, setSelectedEmp] = useState(null);
-            const [editingEmp, setEditingEmp] = useState(null);
-            const [showPinSetup, setShowPinSetup] = useState(false);
-            
-            // Estados do Simulador
-            const [tipoImovel, setTipoImovel] = useState('planta');
-            const [indiceObra, setIndiceObra] = useState('INCC');
-            const [indicePosObra, setIndicePosObra] = useState('IGPM');
-            const [simData, setSimData] = useState({ 
-                valorImovel: '', valorEntrada: '', periodoObra: '', parcelasMensaisObra: '',
-                taxaINCC: '0.5', taxaCUB: '0.4', taxaIGPM: '4.5', taxaIPCA: '4.2',
-                taxaJuros: '9.5', taxaValorizacaoObra: '5', taxaValorizacaoPosObra: '3',
-                aluguelMensal: '', custosMensais: '', taxaSelic: '10.75'
-            });
-            const [simResult, setSimResult] = useState(null);
-            
-            // Estado do Fluxo de Pagamento
-            const [fluxoPagamento, setFluxoPagamento] = useState(null);
-
-            useEffect(() => {
-                const timer = setTimeout(() => {
-                    const savedUser = localStorage.getItem('calOliveirasUser');
-                    const savedEmps = localStorage.getItem('calOliveirasEmpreendimentos');
-                    if (savedEmps) setEmpreendimentos(JSON.parse(savedEmps));
-                    if (savedUser) { setUser(JSON.parse(savedUser)); setScreen('home'); } else { setScreen('login'); }
-                }, 2500);
-                return () => clearTimeout(timer);
-            }, []);
-
-            const saveEmpreendimentos = (emps) => { 
-                setEmpreendimentos(emps); 
-                localStorage.setItem('calOliveirasEmpreendimentos', JSON.stringify(emps)); 
-            };
-
-            const calcularROI = () => {
-                const valor = parseFloat(simData.valorImovel);
-                const entrada = parseFloat(simData.valorEntrada);
-                
-                if (!valor || !entrada) { alert('Preencha valor do imóvel e entrada!'); return; }
-                
-                if (tipoImovel === 'planta') {
-                    // IMÓVEL NA PLANTA
-                    const mesesObra = parseInt(simData.periodoObra) || 24;
-                    const parcelaMensal = parseFloat(simData.parcelasMensaisObra) || 0;
-                    const taxaMensal = indiceObra === 'INCC' ? parseFloat(simData.taxaINCC)/100 : parseFloat(simData.taxaCUB)/100;
-                    const valorizacaoObra = parseFloat(simData.taxaValorizacaoObra)/100;
-                    const selic = parseFloat(simData.taxaSelic)/100;
-                    const ipca = parseFloat(simData.taxaIPCA)/100;
-                    
-                    let totalParcelasCorrigidas = 0;
-                    for(let i = 0; i < mesesObra; i++) {
-                        totalParcelasCorrigidas += parcelaMensal * Math.pow(1 + taxaMensal, i);
-                    }
-                    
-                    const valorFinalObra = valor * Math.pow(1 + valorizacaoObra/12, mesesObra);
-                    const totalInvestido = entrada + totalParcelasCorrigidas;
-                    const ganhoValorizacao = valorFinalObra - valor;
-                    const roiNominal = ((valorFinalObra - totalInvestido) / totalInvestido) * 100;
-                    const roiReal = ((1 + roiNominal/100) / Math.pow(1 + ipca, mesesObra/12) - 1) * 100;
-                    const roiAnualizado = (Math.pow(1 + roiNominal/100, 12/mesesObra) - 1) * 100;
-                    const rendimentoSelic = totalInvestido * (Math.pow(1 + selic, mesesObra/12) - 1);
-                    const vsSelicDiff = (valorFinalObra - totalInvestido) - rendimentoSelic;
-                    
-                    setSimResult({
-                        tipo: 'planta',
-                        investimentoInicial: entrada,
-                        valorAtual: valor,
-                        valorFinalObra: valorFinalObra,
-                        totalParcelasCorrigidas: totalParcelasCorrigidas,
-                        totalInvestido: totalInvestido,
-                        ganhoValorizacao: ganhoValorizacao,
-                        roiNominal: roiNominal,
-                        roiReal: roiReal,
-                        roiAnualizado: roiAnualizado,
-                        mesesObra: mesesObra,
-                        selic: selic * 100,
-                        vsSelicDiff: vsSelicDiff,
-                        semaforo: roiAnualizado >= 12 ? 'verde' : roiAnualizado >= 6 ? 'amarelo' : 'vermelho'
-                    });
-                } else {
-                    // IMÓVEL PRONTO
-                    const anos = 5;
-                    const taxa = parseFloat(simData.taxaValorizacaoPosObra) / 100;
-                    const aluguel = parseFloat(simData.aluguelMensal) || 0;
-                    const custos = parseFloat(simData.custosMensais) || 0;
-                    const ipca = parseFloat(simData.taxaIPCA)/100;
-                    
-                    const valorFuturo = valor * Math.pow(1 + taxa, anos);
-                    const valorizacao = valorFuturo - valor;
-                    const rendaTotal = (aluguel - custos) * 12 * anos;
-                    const ganhoTotal = valorizacao + rendaTotal;
-                    const roiNominal = (ganhoTotal / entrada) * 100;
-                    const roiReal = ((1 + roiNominal/100) / Math.pow(1 + ipca, anos) - 1) * 100;
-                    const roiAnualizado = roiNominal / anos;
-                    
-                    setSimResult({
-                        tipo: 'pronto',
-                        investimentoInicial: entrada,
-                        valorAtual: valor,
-                        valorFuturo: valorFuturo,
-                        valorizacao: valorizacao,
-                        rendaAluguel: rendaTotal,
-                        ganhoTotal: ganhoTotal,
-                        roiNominal: roiNominal,
-                        roiReal: roiReal,
-                        roiAnualizado: roiAnualizado,
-                        anos: anos,
-                        semaforo: roiAnualizado >= 12 ? 'verde' : roiAnualizado >= 6 ? 'amarelo' : 'vermelho'
-                    });
-                }
-            };
-
-            const BottomNav = () => (
-                <div style={{position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', boxShadow: '0 -2px 10px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-around', padding: '0.75rem 0', zIndex: 100}}>
-                    {[
-                        {icon: '🏠', label: 'Home', screen: 'home'}, 
-                        {icon: '📊', label: 'Simulador', screen: 'simulador'}, 
-                        {icon: '💳', label: 'Fluxo', screen: 'fluxo'}, 
-                        {icon: '🏢', label: 'Empreend.', screen: 'empreendimentos'}, 
-                        {icon: '⚙️', label: 'Config', screen: 'config'}
-                    ].map(item => (
-                        <button key={item.screen} onClick={() => setScreen(item.screen)} style={{background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', padding: '0.5rem', flex: 1}}>
-                            <span style={{fontSize: '1.5rem', opacity: screen === item.screen ? 1 : 0.5}}>{item.icon}</span>
-                            <span style={{fontSize: '0.7rem', color: screen === item.screen ? '#8D927D' : '#9ca3af', fontWeight: screen === item.screen ? 'bold' : 'normal'}}>{item.label}</span>
-                        </button>
-                    ))}
+    <div id="app" class="hide">
+        <div id="login" class="hide">
+            <div class="container">
+                <div class="header" style="text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🏢</div>
+                    <h1>Cal Oliveiras</h1>
+                    <p style="color: #a0b5a8;">ROI Tracker - Brusque Edition</p>
                 </div>
-            );
+                <div class="card">
+                    <p style="text-align: center; font-style: italic; color: #a0b5a8; margin-bottom: 1.5rem;">"O dinheiro é feito na COMPRA, não na venda."</p>
+                    <label>Nome Completo</label>
+                    <input type="text" id="userName" placeholder="Seu nome" required>
+                    <label>E-mail</label>
+                    <input type="email" id="userEmail" placeholder="seu@email.com" required>
+                    <button class="btn" onclick="login()">Entrar →</button>
+                </div>
+            </div>
+        </div>
 
-            // SPLASH SCREEN
-            if (screen === 'splash') {
-                return (
-                    <div style={{height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)', color: 'white'}}>
-                        <div style={{textAlign: 'center', animation: 'fadeIn 1s ease-in'}}>
-                            <div style={{fontSize: '5rem', marginBottom: '1rem'}}>🏢</div>
-                            <h1 className="font-montserrat" style={{fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem'}}>Cal Oliveiras</h1>
-                            <p style={{fontSize: '1rem', opacity: 0.9}}>Corretor Particular</p>
-                            <div style={{marginTop: '3rem'}}><div style={{width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto'}}></div></div>
+        <div id="home" class="hide">
+            <div class="container">
+                <div class="header">
+                    <h1 id="welcomeName">Olá! 👋</h1>
+                    <p style="color: #a0b5a8;">Bem-vindo ao seu tracker de ROI</p>
+                </div>
+                <div class="card">
+                    <h2>📊 Simulador ROI</h2>
+                    <p style="color: #a0b5a8; margin-bottom: 1rem;">Calcule seus investimentos</p>
+                    <button class="btn" onclick="showScreen('simulador')">Acessar Simulador →</button>
+                </div>
+                <div class="card">
+                    <h2>🏢 Empreendimentos</h2>
+                    <p style="color: #a0b5a8; margin-bottom: 1rem;">Banco de lançamentos</p>
+                    <button class="btn btn-secondary" onclick="showScreen('empreendimentos')">Ver Empreendimentos →</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="simulador" class="hide">
+            <div class="container">
+                <div class="header">
+                    <h1>📊 Simulador ROI</h1>
+                </div>
+
+                <div id="simForm">
+                    <div class="card">
+                        <h2>Tipo de Imóvel</h2>
+                        <div class="grid-2">
+                            <button class="btn" id="btnPlanta" onclick="setTipo('planta')" style="background: #8D927D;">🏗️ Na Planta</button>
+                            <button class="btn btn-secondary" id="btnPronto" onclick="setTipo('pronto')">🏠 Pronto</button>
                         </div>
                     </div>
-                );
-            }
 
-            // LOGIN SCREEN
-            if (screen === 'login') {
-                return (
-                    <div style={{minHeight: '100vh', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem'}}>
-                        <div style={{width: '100%', maxWidth: '400px'}}>
-                            <div style={{textAlign: 'center', marginBottom: '3rem', color: 'white'}}>
-                                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🏢</div>
-                                <h1 className="font-montserrat" style={{fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem'}}>Cal Oliveiras</h1>
-                                <p style={{fontSize: '0.875rem', opacity: 0.9}}>ROI Tracker - Brusque Edition</p>
+                    <div class="card">
+                        <h2>Dados Básicos</h2>
+                        <label>Valor do Imóvel (R$)</label>
+                        <input type="number" id="valorImovel" placeholder="350000">
+                        <label>Entrada (R$)</label>
+                        <input type="number" id="entrada" placeholder="70000">
+
+                        <div id="camposPlanta">
+                            <label>Duração da Obra (meses)</label>
+                            <input type="number" id="mesesObra" placeholder="24" value="24">
+                            <label>Parcelas Mensais Durante Obra (R$)</label>
+                            <input type="number" id="parcelasObra" placeholder="2000">
+                            
+                            <h2 style="margin-top: 1.5rem;">Índice de Correção</h2>
+                            <div class="grid-2">
+                                <button class="btn" id="btnINCC" onclick="setIndice('INCC')" style="background: #493928;">INCC</button>
+                                <button class="btn btn-secondary" id="btnCUB" onclick="setIndice('CUB')">CUB</button>
                             </div>
-                            <div style={{background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '1rem', marginBottom: '2rem', textAlign: 'center'}}>
-                                <p style={{color: 'white', fontSize: '0.9rem', fontStyle: 'italic', lineHeight: '1.6'}}>"O dinheiro é feito na COMPRA,<br/>não na venda."</p>
-                            </div>
-                            <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.target); const userData = { name: formData.get('name'), email: formData.get('email') }; localStorage.setItem('calOliveirasUser', JSON.stringify(userData)); setUser(userData); setScreen('home'); }} style={{background: 'white', padding: '2rem', borderRadius: '1rem', boxShadow: '0 10px 40px rgba(0,0,0,0.2)'}}>
-                                <div style={{marginBottom: '1.25rem'}}>
-                                    <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Nome Completo</label>
-                                    <input name="name" required style={{width: '100%', padding: '0.875rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} placeholder="Seu nome" />
-                                </div>
-                                <div style={{marginBottom: '1.5rem'}}>
-                                    <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>E-mail</label>
-                                    <input name="email" type="email" required style={{width: '100%', padding: '0.875rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} placeholder="seu@email.com" />
-                                </div>
-                                <button type="submit" className="font-montserrat" style={{width: '100%', background: 'linear-gradient(135deg, #8D927D, #493928)', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.5rem', fontSize: '1.125rem', fontWeight: 'bold', cursor: 'pointer'}}>Entrar →</button>
-                            </form>
+                            <label>Taxa Mensal <span id="indiceLabel">INCC</span> (%)</label>
+                            <input type="number" step="0.1" id="taxaIndice" value="0.5">
+                            <label>Valorização Durante Obra (% a.a.)</label>
+                            <input type="number" step="0.1" id="valorizacaoObra" value="5">
                         </div>
+
+                        <div id="camposPronto" class="hide">
+                            <label>Valorização Anual (%)</label>
+                            <input type="number" step="0.1" id="valorizacaoPronto" value="3">
+                        </div>
+
+                        <h2 style="margin-top: 1.5rem;">Projeções</h2>
+                        <label>Aluguel Mensal Estimado (R$)</label>
+                        <input type="number" id="aluguel" placeholder="1500">
+                        <label>Custos Mensais (R$)</label>
+                        <input type="number" id="custos" placeholder="300">
+                        <label>Taxa Selic Anual (% - comparação)</label>
+                        <input type="number" step="0.01" id="selic" value="10.75">
+
+                        <button class="btn" onclick="calcular()">Calcular ROI</button>
                     </div>
-                );
-            }
+                </div>
 
-            // HOME SCREEN
-            if (screen === 'home') {
-                return (
-                    <div style={{paddingBottom: '5rem', minHeight: '100vh', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)'}}>
-                        <div style={{background: 'rgba(255,255,255,0.95)', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                            <h2 className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>Olá, {user?.name?.split(' ')[0] || 'Investidor'}! 👋</h2>
-                            <p style={{fontSize: '0.875rem', color: '#a0b5a8', marginTop: '0.25rem'}}>Bem-vindo ao seu tracker de ROI</p>
+                <div id="resultado" class="hide">
+                    <div class="card">
+                        <div id="semaforoDiv" class="semaforo verde">
+                            <div style="font-size: 2.5rem;">🟢</div>
+                            <p id="semaforoText">EXCELENTE INVESTIMENTO</p>
                         </div>
-                        <div style={{padding: '1.5rem'}}>
-                            <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
-                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                    <div><p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Empreendimentos</p><p className="font-montserrat" style={{fontSize: '2rem', fontWeight: 'bold', color: '#8D927D'}}>{empreendimentos.length}</p></div>
-                                    <span style={{fontSize: '3rem'}}>🏢</span>
-                                </div>
+
+                        <div class="result">
+                            <p style="color: #a0b5a8; margin-bottom: 0.5rem;">ROI Nominal</p>
+                            <div class="result-big" id="roiNominal">0%</div>
+                            <p style="color: #a0b5a8; margin-top: 0.5rem;" id="roiAnual">0% ao ano</p>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="background: #f9faf9; padding: 1rem; border-radius: 0.5rem; text-align: center;">
+                                <p style="font-size: 0.75rem; color: #a0b5a8;">ROI Real</p>
+                                <p style="font-size: 1.25rem; font-weight: bold;" id="roiReal">0%</p>
                             </div>
-                            <button onClick={() => setScreen('simulador')} style={{width: '100%', background: 'white', border: '2px solid #8D927D', color: '#313128', padding: '1.25rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '1rem'}}>
-                                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}><span style={{fontSize: '1.75rem'}}>📊</span><div style={{textAlign: 'left'}}><p className="font-montserrat" style={{fontWeight: 'bold', fontSize: '1.125rem'}}>Simulador ROI</p><p style={{fontSize: '0.75rem', color: '#a0b5a8'}}>Calcule seus investimentos</p></div></div>
-                                <span style={{fontSize: '1.875rem', color: '#493928'}}>→</span>
-                            </button>
-                            <button onClick={() => setScreen('empreendimentos')} style={{width: '100%', background: 'white', border: '2px solid #8D927D', color: '#313128', padding: '1.25rem', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
-                                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}><span style={{fontSize: '1.75rem'}}>🏢</span><div style={{textAlign: 'left'}}><p className="font-montserrat" style={{fontWeight: 'bold', fontSize: '1.125rem'}}>Empreendimentos</p><p style={{fontSize: '0.75rem', color: '#a0b5a8'}}>Banco de lançamentos</p></div></div>
-                                <span style={{fontSize: '1.875rem', color: '#493928'}}>→</span>
-                            </button>
+                            <div style="background: #f9faf9; padding: 1rem; border-radius: 0.5rem; text-align: center;">
+                                <p style="font-size: 0.75rem; color: #a0b5a8;">Período</p>
+                                <p style="font-size: 1.25rem; font-weight: bold;" id="periodo">0</p>
+                            </div>
                         </div>
-                        <BottomNav />
+
+                        <div id="detalhes"></div>
+
+                        <button class="btn btn-secondary" onclick="novaSimulacao()">Nova Simulação</button>
                     </div>
-                );
+                </div>
+            </div>
+        </div>
+
+        <div id="empreendimentos" class="hide">
+            <div class="container">
+                <div class="header">
+                    <h1>🏢 Empreendimentos</h1>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 4rem;">🏗️</div>
+                    <h2>Em breve!</h2>
+                    <p style="color: #a0b5a8;">Funcionalidade em desenvolvimento</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="nav">
+                <div class="nav-btn active" onclick="showScreen('home')">🏠<br>Home</div>
+                <div class="nav-btn" onclick="showScreen('simulador')">📊<br>Simulador</div>
+                <div class="nav-btn" onclick="showScreen('fluxo')">💳<br>Fluxo</div>
+                <div class="nav-btn" onclick="showScreen('empreendimentos')">🏢<br>Empreend.</div>
+                <div class="nav-btn" onclick="showScreen('config')">⚙️<br>Config</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTipo = 'planta';
+        let currentIndice = 'INCC';
+
+        setTimeout(() => {
+            document.getElementById('splash').classList.add('hide');
+            document.getElementById('app').classList.remove('hide');
+            const saved = localStorage.getItem('calUser');
+            if(saved) {
+                const user = JSON.parse(saved);
+                document.getElementById('welcomeName').textContent = `Olá, ${user.name.split(' ')[0]}! 👋`;
+                showScreen('home');
+            } else {
+                showScreen('login');
             }
+        }, 2500);
 
-            // SIMULADOR SCREEN
-            if (screen === 'simulador') {
-                return (
-                    <div style={{paddingBottom: '5rem', minHeight: '100vh', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)'}}>
-                        <div style={{background: 'rgba(255,255,255,0.95)', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 10}}>
-                            <h1 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128'}}>📊 Simulador ROI</h1>
-                        </div>
-                        <div style={{padding: '1.5rem'}}>
-                            {!simResult ? (
-                                <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                    {/* SELEÇÃO TIPO IMÓVEL */}
-                                    <div style={{marginBottom: '1.5rem'}}>
-                                        <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>Tipo de Imóvel</h3>
-                                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                            <button onClick={() => setTipoImovel('planta')} style={{padding: '1rem', background: tipoImovel === 'planta' ? '#8D927D' : 'white', color: tipoImovel === 'planta' ? 'white' : '#313128', border: '2px solid #8D927D', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>🏗️ Na Planta</button>
-                                            <button onClick={() => setTipoImovel('pronto')} style={{padding: '1rem', background: tipoImovel === 'pronto' ? '#8D927D' : 'white', color: tipoImovel === 'pronto' ? 'white' : '#313128', border: '2px solid #8D927D', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>🏠 Pronto</button>
-                                        </div>
-                                    </div>
+        function login() {
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            if(!name || !email) { alert('Preencha todos os campos!'); return; }
+            localStorage.setItem('calUser', JSON.stringify({name, email}));
+            document.getElementById('welcomeName').textContent = `Olá, ${name.split(' ')[0]}! 👋`;
+            showScreen('home');
+        }
 
-                                    {/* DADOS BÁSICOS */}
-                                    <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>Dados Básicos</h3>
-                                    <div style={{display: 'grid', gap: '1rem', marginBottom: '1.5rem'}}>
-                                        <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Valor do Imóvel (R$)</label><input type="number" value={simData.valorImovel} onChange={(e) => setSimData({...simData, valorImovel: e.target.value})} placeholder="350000" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                        <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Entrada (R$)</label><input type="number" value={simData.valorEntrada} onChange={(e) => setSimData({...simData, valorEntrada: e.target.value})} placeholder="70000" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                    </div>
+        function showScreen(screen) {
+            ['login', 'home', 'simulador', 'empreendimentos'].forEach(s => {
+                document.getElementById(s).classList.add('hide');
+            });
+            document.getElementById(screen).classList.remove('hide');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if(screen !== 'login') {
+                const navBtns = document.querySelectorAll('.nav-btn');
+                const map = {home: 0, simulador: 1, fluxo: 2, empreendimentos: 3, config: 4};
+                if(map[screen] !== undefined) navBtns[map[screen]].classList.add('active');
+            }
+        }
 
-                                    {/* CAMPOS ESPECÍFICOS - NA PLANTA */}
-                                    {tipoImovel === 'planta' && (
-                                        <>
-                                            <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>⏱️ Período de Obra</h3>
-                                            <div style={{display: 'grid', gap: '1rem', marginBottom: '1.5rem'}}>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Duração da Obra (meses)</label><input type="number" value={simData.periodoObra} onChange={(e) => setSimData({...simData, periodoObra: e.target.value})} placeholder="24" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Parcelas Mensais Durante Obra (R$)</label><input type="number" value={simData.parcelasMensaisObra} onChange={(e) => setSimData({...simData, parcelasMensaisObra: e.target.value})} placeholder="2000" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            </div>
+        function setTipo(tipo) {
+            currentTipo = tipo;
+            document.getElementById('btnPlanta').className = tipo === 'planta' ? 'btn' : 'btn btn-secondary';
+            document.getElementById('btnPlanta').style.background = tipo === 'planta' ? '#8D927D' : '';
+            document.getElementById('btnPronto').className = tipo === 'pronto' ? 'btn' : 'btn btn-secondary';
+            document.getElementById('btnPronto').style.background = tipo === 'pronto' ? '#8D927D' : '';
+            document.getElementById('camposPlanta').classList.toggle('hide', tipo !== 'planta');
+            document.getElementById('camposPronto').classList.toggle('hide', tipo !== 'pronto');
+        }
 
-                                            <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>📊 Índice de Correção (Obra)</h3>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem'}}>
-                                                <button onClick={() => setIndiceObra('INCC')} style={{padding: '0.75rem', background: indiceObra === 'INCC' ? '#493928' : 'white', color: indiceObra === 'INCC' ? 'white' : '#313128', border: '2px solid #493928', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer'}}>INCC</button>
-                                                <button onClick={() => setIndiceObra('CUB')} style={{padding: '0.75rem', background: indiceObra === 'CUB' ? '#493928' : 'white', color: indiceObra === 'CUB' ? 'white' : '#313128', border: '2px solid #493928', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer'}}>CUB</button>
-                                            </div>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Taxa {indiceObra} Mensal (%)</label><input type="number" step="0.1" value={indiceObra === 'INCC' ? simData.taxaINCC : simData.taxaCUB} onChange={(e) => setSimData({...simData, [indiceObra === 'INCC' ? 'taxaINCC' : 'taxaCUB']: e.target.value})} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Valorização Obra (% a.a.)</label><input type="number" step="0.1" value={simData.taxaValorizacaoObra} onChange={(e) => setSimData({...simData, taxaValorizacaoObra: e.target.value})} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            </div>
+        function setIndice(indice) {
+            currentIndice = indice;
+            document.getElementById('btnINCC').className = indice === 'INCC' ? 'btn' : 'btn btn-secondary';
+            document.getElementById('btnINCC').style.background = indice === 'INCC' ? '#493928' : '';
+            document.getElementById('btnCUB').className = indice === 'CUB' ? 'btn' : 'btn btn-secondary';
+            document.getElementById('btnCUB').style.background = indice === 'CUB' ? '#493928' : '';
+            document.getElementById('indiceLabel').textContent = indice;
+        }
 
-                                            <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem', marginTop: '1.5rem'}}>📊 Índice Pós-Obra</h3>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem'}}>
-                                                <button onClick={() => setIndicePosObra('IGPM')} style={{padding: '0.75rem', background: indicePosObra === 'IGPM' ? '#493928' : 'white', color: indicePosObra === 'IGPM' ? 'white' : '#313128', border: '2px solid #493928', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer'}}>IGPM</button>
-                                                <button onClick={() => setIndicePosObra('IPCA')} style={{padding: '0.75rem', background: indicePosObra === 'IPCA' ? '#493928' : 'white', color: indicePosObra === 'IPCA' ? 'white' : '#313128', border: '2px solid #493928', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer'}}>IPCA</button>
-                                            </div>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem'}}>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Taxa {indicePosObra} Anual (%)</label><input type="number" step="0.1" value={indicePosObra === 'IGPM' ? simData.taxaIGPM : simData.taxaIPCA} onChange={(e) => setSimData({...simData, [indicePosObra === 'IGPM' ? 'taxaIGPM' : 'taxaIPCA']: e.target.value})} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Taxa Juros Financ. (% a.a.)</label><input type="number" step="0.1" value={simData.taxaJuros} onChange={(e) => setSimData({...simData, taxaJuros: e.target.value})} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            </div>
-                                        </>
-                                    )}
+        function calcular() {
+            const valor = parseFloat(document.getElementById('valorImovel').value);
+            const entrada = parseFloat(document.getElementById('entrada').value);
 
-                                    {/* CAMPOS COMUNS */}
-                                    <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>📈 Projeções</h3>
-                                    <div style={{display: 'grid', gap: '1rem', marginBottom: '1.5rem'}}>
-                                        {tipoImovel === 'pronto' && (
-                                            <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Valorização Anual (%)</label><input type="number" step="0.1" value={simData.taxaValorizacaoPosObra} onChange={(e) => setSimData({...simData, taxaValorizacaoPosObra: e.target.value})} placeholder="3" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                        )}
-                                        <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Aluguel Mensal Estimado (R$)</label><input type="number" value={simData.aluguelMensal} onChange={(e) => setSimData({...simData, aluguelMensal: e.target.value})} placeholder="1500" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                        <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Custos Mensais (R$)</label><input type="number" value={simData.custosMensais} onChange={(e) => setSimData({...simData, custosMensais: e.target.value})} placeholder="300" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /><p style={{fontSize: '0.75rem', color: '#a0b5a8', marginTop: '0.25rem'}}>Condomínio, IPTU, manutenção</p></div>
-                                        <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Taxa Selic Anual (% - comparação)</label><input type="number" step="0.01" value={simData.taxaSelic} onChange={(e) => setSimData({...simData, taxaSelic: e.target.value})} placeholder="10.75" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                    </div>
+            if(!valor || !entrada) { alert('Preencha valor do imóvel e entrada!'); return; }
 
-                                    <button onClick={calcularROI} style={{width: '100%', background: 'linear-gradient(135deg, #8D927D, #493928)', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', fontSize: '1.125rem', cursor: 'pointer'}}>Calcular ROI</button>
-                                </div>
-                            ) : (
-                                <div>
-                                    <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                        <h3 className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>Resultado da Simulação</h3>
-                                        
-                                        {/* SEMÁFORO */}
-                                        <div style={{background: simResult.semaforo === 'verde' ? '#10b981' : simResult.semaforo === 'amarelo' ? '#f59e0b' : '#ef4444', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', textAlign: 'center'}}>
-                                            <p style={{fontSize: '2.5rem', margin: 0}}>{simResult.semaforo === 'verde' ? '🟢' : simResult.semaforo === 'amarelo' ? '🟡' : '🔴'}</p>
-                                            <p style={{fontSize: '0.875rem', color: 'white', fontWeight: 'bold', marginTop: '0.5rem'}}>
-                                                {simResult.semaforo === 'verde' ? 'EXCELENTE INVESTIMENTO' : simResult.semaforo === 'amarelo' ? 'INVESTIMENTO MODERADO' : 'INVESTIMENTO BAIXO RETORNO'}
-                                            </p>
-                                        </div>
+            let roiNominal, roiReal, roiAnualizado, periodo, detalhes;
 
-                                        {/* ROI PRINCIPAL */}
-                                        <div style={{background: '#f0f4f1', padding: '1.5rem', borderRadius: '0.75rem', marginBottom: '1.5rem', textAlign: 'center'}}>
-                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8', marginBottom: '0.5rem'}}>ROI Nominal</p>
-                                            <p className="font-montserrat" style={{fontSize: '2.5rem', fontWeight: 'bold', color: '#8D927D'}}>{simResult.roiNominal.toFixed(2)}%</p>
-                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8', marginTop: '0.25rem'}}>{simResult.roiAnualizado.toFixed(2)}% ao ano</p>
-                                        </div>
+            if(currentTipo === 'planta') {
+                const meses = parseInt(document.getElementById('mesesObra').value) || 24;
+                const parcela = parseFloat(document.getElementById('parcelasObra').value) || 0;
+                const taxa = parseFloat(document.getElementById('taxaIndice').value) / 100;
+                const valorizacao = parseFloat(document.getElementById('valorizacaoObra').value) / 100;
+                const selic = parseFloat(document.getElementById('selic').value) / 100;
 
-                                        {/* MÉTRICAS */}
-                                        <div style={{display: 'grid', gap: '1rem', marginBottom: '1.5rem'}}>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem', textAlign: 'center'}}>
-                                                    <p style={{fontSize: '0.75rem', color: '#a0b5a8'}}>ROI Real</p>
-                                                    <p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>{simResult.roiReal.toFixed(2)}%</p>
-                                                </div>
-                                                <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem', textAlign: 'center'}}>
-                                                    <p style={{fontSize: '0.75rem', color: '#a0b5a8'}}>Período</p>
-                                                    <p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>{simResult.tipo === 'planta' ? `${simResult.mesesObra} meses` : `${simResult.anos} anos`}</p>
-                                                </div>
-                                            </div>
+                let totalParcelas = 0;
+                for(let i = 0; i < meses; i++) {
+                    totalParcelas += parcela * Math.pow(1 + taxa, i);
+                }
 
-                                            {simResult.tipo === 'planta' && (
-                                                <>
-                                                    <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                        <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Investimento Total</p>
-                                                        <p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>R$ {simResult.totalInvestido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                                        <p style={{fontSize: '0.75rem', color: '#a0b5a8', marginTop: '0.25rem'}}>Entrada + Parcelas Corrigidas</p>
-                                                    </div>
-                                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                        <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Valor Inicial</p>
-                                                            <p className="font-montserrat" style={{fontSize: '1rem', fontWeight: 'bold', color: '#313128'}}>R$ {simResult.valorAtual.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</p>
-                                                        </div>
-                                                        <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Pós-Obra</p>
-                                                            <p className="font-montserrat" style={{fontSize: '1rem', fontWeight: 'bold', color: '#8D927D'}}>R$ {simResult.valorFinalObra.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{padding: '1.5rem', background: 'linear-gradient(135deg, #8D927D, #493928)', borderRadius: '0.75rem'}}>
-                                                        <p style={{fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.5rem'}}>vs Selic ({simResult.selic.toFixed(2)}% a.a.)</p>
-                                                        <p className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: 'white'}}>
-                                                            {simResult.vsSelicDiff >= 0 ? '+' : ''}R$ {simResult.vsSelicDiff.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                                                        </p>
-                                                        <p style={{fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', marginTop: '0.25rem'}}>
-                                                            {simResult.vsSelicDiff >= 0 ? 'Melhor que Selic ✓' : 'Pior que Selic ✗'}
-                                                        </p>
-                                                    </div>
-                                                </>
-                                            )}
+                const valorFinal = valor * Math.pow(1 + valorizacao/12, meses);
+                const totalInvestido = entrada + totalParcelas;
+                roiNominal = ((valorFinal - totalInvestido) / totalInvestido) * 100;
+                roiReal = ((1 + roiNominal/100) / Math.pow(1.042, meses/12) - 1) * 100;
+                roiAnualizado = (Math.pow(1 + roiNominal/100, 12/meses) - 1) * 100;
+                periodo = `${meses} meses`;
 
-                                            {simResult.tipo === 'pronto' && (
-                                                <>
-                                                    <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                        <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Investimento Inicial</p>
-                                                        <p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>R$ {simResult.investimentoInicial.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                                    </div>
-                                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                        <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Valor Atual</p>
-                                                            <p className="font-montserrat" style={{fontSize: '1rem', fontWeight: 'bold', color: '#313128'}}>R$ {simResult.valorAtual.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</p>
-                                                        </div>
-                                                        <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Valor Futuro</p>
-                                                            <p className="font-montserrat" style={{fontSize: '1rem', fontWeight: 'bold', color: '#8D927D'}}>R$ {simResult.valorFuturo.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                        <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Valorização do Imóvel</p>
-                                                        <p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#8D927D'}}>R$ {simResult.valorizacao.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                                    </div>
-                                                    {simResult.rendaAluguel > 0 && (
-                                                        <div style={{padding: '1rem', background: '#f9faf9', borderRadius: '0.5rem'}}>
-                                                            <p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Renda de Aluguel (líquida)</p>
-                                                            <p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#8D927D'}}>R$ {simResult.rendaAluguel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                                        </div>
-                                                    )}
-                                                    <div style={{padding: '1.5rem', background: 'linear-gradient(135deg, #8D927D, #493928)', borderRadius: '0.75rem'}}>
-                                                        <p style={{fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.5rem'}}>Ganho Total Estimado</p>
-                                                        <p className="font-montserrat" style={{fontSize: '1.75rem', fontWeight: 'bold', color: 'white'}}>R$ {simResult.ganhoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <button onClick={() => { setSimResult(null); setSimData({ valorImovel: '', valorEntrada: '', periodoObra: '', parcelasMensaisObra: '', taxaINCC: '0.5', taxaCUB: '0.4', taxaIGPM: '4.5', taxaIPCA: '4.2', taxaJuros: '9.5', taxaValorizacaoObra: '5', taxaValorizacaoPosObra: '3', aluguelMensal: '', custosMensais: '', taxaSelic: '10.75' }); }} style={{width: '100%', background: 'white', border: '2px solid #8D927D', color: '#313128', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>Nova Simulação</button>
-                                </div>
-                            )}
-                        </div>
-                        <BottomNav />
+                const rendSelic = totalInvestido * (Math.pow(1 + selic, meses/12) - 1);
+                const vsSelic = (valorFinal - totalInvestido) - rendSelic;
+
+                detalhes = `
+                    <div style="background: #f9faf9; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                        <p style="color: #a0b5a8; font-size: 0.875rem;">Investimento Total</p>
+                        <p style="font-size: 1.25rem; font-weight: bold;">R$ ${totalInvestido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                     </div>
-                );
-            }
-
-            // FLUXO DE PAGAMENTO SCREEN
-            if (screen === 'fluxo') {
-                return (
-                    <div style={{paddingBottom: '5rem', minHeight: '100vh', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)'}}>
-                        <div style={{background: 'rgba(255,255,255,0.95)', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 10}}>
-                            <h1 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128'}}>💳 Fluxo de Pagamento</h1>
-                        </div>
-                        <div style={{padding: '1.5rem'}}>
-                            {!fluxoPagamento ? (
-                                <div style={{background: 'white', padding: '3rem', borderRadius: '1rem', textAlign: 'center'}}>
-                                    <span style={{fontSize: '4rem'}}>🏗️</span>
-                                    <h3 className="font-montserrat" style={{fontSize: '1.25rem', marginTop: '1rem', color: '#313128'}}>Selecione um Empreendimento</h3>
-                                    <p style={{color: '#a0b5a8', marginTop: '0.5rem', marginBottom: '1.5rem'}}>Vá em "Empreendimentos" e selecione uma unidade</p>
-                                    <button onClick={() => setScreen('empreendimentos')} style={{background: '#8D927D', color: 'white', border: 'none', padding: '1rem 2rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>Ir para Empreendimentos</button>
-                                </div>
-                            ) : (
-                                <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                    <div style={{marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #f0f4f1'}}>
-                                        <h3 className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>{fluxoPagamento.nomeEmpreendimento}</h3>
-                                        <p style={{fontSize: '0.875rem', color: '#a0b5a8', marginTop: '0.25rem'}}>Unidade: {fluxoPagamento.unidade}</p>
-                                        <p className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#8D927D', marginTop: '0.75rem'}}>R$ {parseFloat(fluxoPagamento.valorTotal).toLocaleString('pt-BR')}</p>
-                                    </div>
-
-                                    {!fluxoPagamento.calculado ? (
-                                        <form onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const formData = new FormData(e.target);
-                                            const ato = parseFloat(formData.get('ato')) || 0;
-                                            const qtdParcelas = parseInt(formData.get('qtdParcelas')) || 0;
-                                            const valorParcela = parseFloat(formData.get('valorParcela')) || 0;
-                                            const qtdReforcos = parseInt(formData.get('qtdReforcos')) || 0;
-                                            
-                                            let reforcos = [];
-                                            for(let i = 1; i <= qtdReforcos; i++) {
-                                                reforcos.push({
-                                                    valor: parseFloat(formData.get(`reforco${i}`)) || 0,
-                                                    mes: parseInt(formData.get(`mesReforco${i}`)) || 0
-                                                });
-                                            }
-                                            
-                                            const totalParcelas = qtdParcelas * valorParcela;
-                                            const totalReforcos = reforcos.reduce((sum, r) => sum + r.valor, 0);
-                                            const totalEntrada = ato + totalParcelas + totalReforcos;
-                                            const saldoRestante = parseFloat(fluxoPagamento.valorTotal) - totalEntrada;
-                                            const formaPagamento = formData.get('formaPagamento');
-                                            
-                                            setFluxoPagamento({
-                                                ...fluxoPagamento,
-                                                ato, qtdParcelas, valorParcela, totalParcelas, reforcos, totalReforcos,
-                                                totalEntrada, saldoRestante, formaPagamento,
-                                                calculado: true
-                                            });
-                                        }}>
-                                            <h4 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>📍 Entrada (Pré-Chaves)</h4>
-                                            
-                                            <div style={{display: 'grid', gap: '1rem', marginBottom: '1.5rem'}}>
-                                                <div>
-                                                    <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Ato/Sinal (R$)</label>
-                                                    <input name="ato" type="number" required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} />
-                                                </div>
-                                                
-                                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                    <div>
-                                                        <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Qtd Parcelas Mensais</label>
-                                                        <input name="qtdParcelas" type="number" required defaultValue={fluxoPagamento.parcelasPermitidas || ''} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} />
-                                                    </div>
-                                                    <div>
-                                                        <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Valor Parcela (R$)</label>
-                                                        <input name="valorParcela" type="number" required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} />
-                                                    </div>
-                                                </div>
-                                                
-                                                <div>
-                                                    <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Quantos Reforços/Balões?</label>
-                                                    <select name="qtdReforcos" defaultValue={0} onChange={(e) => {
-                                                        const qtd = parseInt(e.target.value);
-                                                        for(let i = 1; i <= 4; i++) {
-                                                            const elem = document.getElementById(`reforco-${i}`);
-                                                            if(elem) elem.style.display = i <= qtd ? 'block' : 'none';
-                                                        }
-                                                    }} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}}>
-                                                        <option value="0">Nenhum</option>
-                                                        <option value="1">1 Reforço</option>
-                                                        <option value="2">2 Reforços</option>
-                                                        <option value="3">3 Reforços</option>
-                                                        <option value="4">4 Reforços</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {[1,2,3,4].map(i => (
-                                                <div key={i} id={`reforco-${i}`} style={{display: 'none', background: '#f9faf9', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1rem'}}>
-                                                    <h5 className="font-montserrat" style={{fontSize: '1rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.75rem'}}>Reforço {i}</h5>
-                                                    <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem'}}>
-                                                        <div>
-                                                            <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Valor (R$)</label>
-                                                            <input name={`reforco${i}`} type="number" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} />
-                                                        </div>
-                                                        <div>
-                                                            <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Mês</label>
-                                                            <input name={`mesReforco${i}`} type="number" placeholder="12" style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-
-                                            <h4 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem', marginTop: '1.5rem'}}>💰 Saldo Devedor</h4>
-                                            
-                                            <div style={{marginBottom: '1.5rem'}}>
-                                                <label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.75rem'}}>Forma de Pagamento do Saldo</label>
-                                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                    <label style={{display: 'flex', alignItems: 'center', padding: '1rem', border: '2px solid #8D927D', borderRadius: '0.75rem', cursor: 'pointer'}}>
-                                                        <input type="radio" name="formaPagamento" value="financiamento" required style={{marginRight: '0.75rem', width: '20px', height: '20px'}} />
-                                                        <div>
-                                                            <p style={{fontWeight: 'bold', color: '#313128'}}>🏦 Financiamento</p>
-                                                            <p style={{fontSize: '0.75rem', color: '#a0b5a8'}}>Banco</p>
-                                                        </div>
-                                                    </label>
-                                                    <label style={{display: 'flex', alignItems: 'center', padding: '1rem', border: '2px solid #8D927D', borderRadius: '0.75rem', cursor: 'pointer'}}>
-                                                        <input type="radio" name="formaPagamento" value="quitar" style={{marginRight: '0.75rem', width: '20px', height: '20px'}} />
-                                                        <div>
-                                                            <p style={{fontWeight: 'bold', color: '#313128'}}>💵 Quitar</p>
-                                                            <p style={{fontSize: '0.75rem', color: '#a0b5a8'}}>À vista</p>
-                                                        </div>
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            <button type="submit" style={{width: '100%', background: 'linear-gradient(135deg, #8D927D, #493928)', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', fontSize: '1.125rem', cursor: 'pointer'}}>Calcular Fluxo</button>
-                                        </form>
-                                    ) : (
-                                        <div style={{padding: '1.5rem', background: '#f0f4f1', borderRadius: '1rem'}}>
-                                            <h4 className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128', marginBottom: '1.5rem'}}>📊 Resumo do Fluxo</h4>
-                                            
-                                            <div style={{display: 'grid', gap: '1rem'}}>
-                                                <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '0.5rem'}}>
-                                                    <span style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Ato/Sinal</span>
-                                                    <span className="font-montserrat" style={{fontWeight: 'bold', color: '#313128'}}>R$ {fluxoPagamento.ato.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                                                </div>
-                                                
-                                                <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '0.5rem'}}>
-                                                    <span style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Parcelas ({fluxoPagamento.qtdParcelas}x)</span>
-                                                    <span className="font-montserrat" style={{fontWeight: 'bold', color: '#313128'}}>R$ {fluxoPagamento.totalParcelas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                                                </div>
-                                                
-                                                {fluxoPagamento.totalReforcos > 0 && (
-                                                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '0.5rem'}}>
-                                                        <span style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Reforços ({fluxoPagamento.reforcos.length}x)</span>
-                                                        <span className="font-montserrat" style={{fontWeight: 'bold', color: '#313128'}}>R$ {fluxoPagamento.totalReforcos.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                                                    </div>
-                                                )}
-                                                
-                                                <div style={{display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#8D927D', borderRadius: '0.75rem'}}>
-                                                    <span style={{color: 'white', fontWeight: 'bold'}}>Total Entrada</span>
-                                                    <span className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: 'white'}}>R$ {fluxoPagamento.totalEntrada.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                                                </div>
-                                                
-                                                <div style={{display: 'flex', justifyContent: 'space-between', padding: '1rem', background: fluxoPagamento.formaPagamento === 'financiamento' ? '#493928' : '#10b981', borderRadius: '0.75rem'}}>
-                                                    <span style={{color: 'white', fontWeight: 'bold'}}>Saldo Restante</span>
-                                                    <span className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: 'white'}}>R$ {fluxoPagamento.saldoRestante.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                                                </div>
-                                                
-                                                <div style={{padding: '1rem', background: 'white', borderRadius: '0.75rem', textAlign: 'center'}}>
-                                                    <p style={{fontSize: '0.875rem', color: '#a0b5a8', marginBottom: '0.5rem'}}>Forma de Pagamento do Saldo</p>
-                                                    <p className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128'}}>
-                                                        {fluxoPagamento.formaPagamento === 'financiamento' ? '🏦 Financiamento Bancário' : '💵 Quitar à Vista'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <button onClick={() => setFluxoPagamento(null)} style={{width: '100%', marginTop: '1.5rem', background: 'white', border: '2px solid #8D927D', color: '#313128', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>Limpar Fluxo</button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        <BottomNav />
+                    <div style="background: linear-gradient(135deg, #8D927D, #493928); padding: 1.5rem; border-radius: 0.75rem; color: white;">
+                        <p style="opacity: 0.9; margin-bottom: 0.5rem;">vs Selic (${selic.toFixed(2)}% a.a.)</p>
+                        <p style="font-size: 1.5rem; font-weight: bold;">${vsSelic >= 0 ? '+' : ''}R$ ${vsSelic.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                        <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.5rem;">${vsSelic >= 0 ? 'Melhor que Selic ✓' : 'Pior que Selic ✗'}</p>
                     </div>
-                );
-            }
+                `;
+            } else {
+                const valorizacao = parseFloat(document.getElementById('valorizacaoPronto').value) / 100;
+                const anos = 5;
+                const valorFinal = valor * Math.pow(1 + valorizacao, anos);
+                roiNominal = ((valorFinal - valor) / entrada) * 100;
+                roiReal = ((1 + roiNominal/100) / Math.pow(1.042, anos) - 1) * 100;
+                roiAnualizado = roiNominal / anos;
+                periodo = `${anos} anos`;
 
-            // EMPREENDIMENTOS SCREEN
-            if (screen === 'empreendimentos') {
-                return (
-                    <div style={{paddingBottom: '5rem', minHeight: '100vh', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)'}}>
-                        <div style={{background: 'rgba(255,255,255,0.95)', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 10}}>
-                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                <h1 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128'}}>🏢 Empreendimentos</h1>
-                                <button onClick={() => setEditingEmp({})} style={{background: '#8D927D', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer'}}>+ Adicionar</button>
-                            </div>
-                        </div>
-                        <div style={{padding: '1.5rem'}}>
-                            {empreendimentos.length === 0 ? (
-                                <div style={{background: 'white', padding: '3rem', borderRadius: '1rem', textAlign: 'center', marginTop: '2rem'}}>
-                                    <span style={{fontSize: '4rem'}}>🏗️</span>
-                                    <h3 className="font-montserrat" style={{fontSize: '1.25rem', marginTop: '1rem', color: '#313128'}}>Nenhum empreendimento cadastrado</h3>
-                                    <p style={{color: '#a0b5a8', marginTop: '0.5rem'}}>Clique em "+ Adicionar"</p>
-                                </div>
-                            ) : (
-                                <div style={{display: 'grid', gap: '1rem'}}>
-                                    {empreendimentos.map((emp, idx) => (
-                                        <div key={idx} onClick={() => setSelectedEmp(emp)} style={{background: 'white', borderRadius: '1rem', padding: '1.25rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                            <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                                                <div style={{flex: 1}}>
-                                                    <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128'}}>{emp.nome}</h3>
-                                                    <p style={{fontSize: '0.875rem', color: '#a0b5a8', marginTop: '0.25rem'}}>{emp.construtora}</p>
-                                                    <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap'}}>
-                                                        <span style={{background: '#8D927D', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.75rem'}}>{emp.bairro}</span>
-                                                        <span style={{background: emp.status === 'Lançamento' ? '#493928' : emp.status === 'Em obras' ? '#f59e0b' : '#10b981', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.75rem'}}>{emp.status}</span>
-                                                    </div>
-                                                    <p className="font-montserrat" style={{fontSize: '1rem', fontWeight: 'bold', color: '#8D927D', marginTop: '0.75rem'}}>R$ {Number(emp.precoMin).toLocaleString('pt-BR')} - R$ {Number(emp.precoMax).toLocaleString('pt-BR')}</p>
-                                                </div>
-                                                <span style={{fontSize: '1.5rem'}}>→</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {selectedEmp && (
-                            <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 50}} onClick={() => setSelectedEmp(null)}>
-                                <div style={{background: 'white', width: '100%', maxHeight: '90vh', overflow: 'auto', borderRadius: '1.5rem 1.5rem 0 0', padding: '1.5rem'}} onClick={(e) => e.stopPropagation()}>
-                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem'}}>
-                                        <h2 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128'}}>{selectedEmp.nome}</h2>
-                                        <button onClick={() => setSelectedEmp(null)} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer'}}>✕</button>
-                                    </div>
-                                    <div style={{marginBottom: '1rem'}}><p style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Construtora</p><p className="font-montserrat" style={{fontWeight: 'bold', fontSize: '1rem', color: '#313128'}}>{selectedEmp.construtora}</p></div>
-                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem'}}>
-                                        <div><p style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Bairro</p><p style={{fontWeight: 'bold', color: '#313128'}}>{selectedEmp.bairro}</p></div>
-                                        <div><p style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Status</p><p style={{fontWeight: 'bold', color: '#313128'}}>{selectedEmp.status}</p></div>
-                                    </div>
-                                    {selectedEmp.metragens && (<div style={{marginBottom: '1rem'}}><p style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Metragens</p><p style={{fontWeight: 'bold', color: '#313128'}}>{selectedEmp.metragens}</p></div>)}
-                                    {selectedEmp.periodoObra && (<div style={{marginBottom: '1rem'}}><p style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Período de Obra</p><p style={{fontWeight: 'bold', color: '#313128'}}>{selectedEmp.periodoObra} meses</p></div>)}
-                                    {selectedEmp.parcelasPermitidas && (<div style={{marginBottom: '1rem'}}><p style={{color: '#a0b5a8', fontSize: '0.875rem'}}>Parcelas Permitidas</p><p style={{fontWeight: 'bold', color: '#313128'}}>Até {selectedEmp.parcelasPermitidas}x</p></div>)}
-                                    <div style={{display: 'grid', gap: '0.75rem', marginTop: '1.5rem'}}>
-                                        <button onClick={() => { 
-                                            setFluxoPagamento({
-                                                nomeEmpreendimento: selectedEmp.nome,
-                                                unidade: 'Apto 101',
-                                                valorTotal: selectedEmp.precoMin,
-                                                parcelasPermitidas: selectedEmp.parcelasPermitidas || 36,
-                                                periodoObra: selectedEmp.periodoObra || 24
-                                            }); 
-                                            setScreen('fluxo'); 
-                                            setSelectedEmp(null);
-                                        }} style={{background: '#10b981', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>💳 Enviar para Fluxo de Pagamento</button>
-                                        <button onClick={() => { setEditingEmp(selectedEmp); setSelectedEmp(null); }} style={{background: '#8D927D', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>✏️ Editar</button>
-                                        <button onClick={() => { if (confirm('Deseja excluir?')) { saveEmpreendimentos(empreendimentos.filter(e => e.nome !== selectedEmp.nome)); setSelectedEmp(null); }}} style={{background: '#ef4444', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>🗑️ Excluir</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        {editingEmp && (
-                            <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 50}} onClick={() => setEditingEmp(null)}>
-                                <div style={{background: 'white', width: '100%', maxHeight: '90vh', overflow: 'auto', borderRadius: '1.5rem 1.5rem 0 0', padding: '1.5rem'}} onClick={(e) => e.stopPropagation()}>
-                                    <h2 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128', marginBottom: '1.5rem'}}>{editingEmp.nome ? 'Editar' : 'Adicionar'}</h2>
-                                    <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.target); const newEmp = { nome: formData.get('nome'), construtora: formData.get('construtora'), bairro: formData.get('bairro'), status: formData.get('status'), tipo: formData.get('tipo'), precoMin: formData.get('precoMin'), precoMax: formData.get('precoMax'), entrega: formData.get('entrega'), metragens: formData.get('metragens'), periodoObra: formData.get('periodoObra'), parcelasPermitidas: formData.get('parcelasPermitidas') }; if (editingEmp.nome) { saveEmpreendimentos(empreendimentos.map(e => e.nome === editingEmp.nome ? newEmp : e)); } else { saveEmpreendimentos([...empreendimentos, newEmp]); } setEditingEmp(null); }}>
-                                        <div style={{display: 'grid', gap: '1rem'}}>
-                                            <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Nome</label><input name="nome" defaultValue={editingEmp.nome || ''} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Construtora</label><input name="construtora" defaultValue={editingEmp.construtora || ''} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Bairro</label><input name="bairro" defaultValue={editingEmp.bairro || ''} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Status</label><select name="status" defaultValue={editingEmp.status || 'Lançamento'} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}}><option>Lançamento</option><option>Em obras</option><option>Pronto</option></select></div>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Tipo</label><select name="tipo" defaultValue={editingEmp.tipo || 'Apartamento'} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}}><option>Apartamento</option><option>Casa</option><option>Cobertura</option></select></div>
-                                            </div>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Preço Mín (R$)</label><input type="number" name="precoMin" defaultValue={editingEmp.precoMin || ''} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Preço Máx (R$)</label><input type="number" name="precoMax" defaultValue={editingEmp.precoMax || ''} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            </div>
-                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Período Obra (meses)</label><input type="number" name="periodoObra" placeholder="24" defaultValue={editingEmp.periodoObra || ''} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                                <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Parcelas Permitidas</label><input type="number" name="parcelasPermitidas" placeholder="36" defaultValue={editingEmp.parcelasPermitidas || ''} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            </div>
-                                            <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Entrega</label><input name="entrega" placeholder="Ex: Dez/2026" defaultValue={editingEmp.entrega || ''} required style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            <div><label style={{display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#313128', marginBottom: '0.5rem'}}>Metragens</label><input name="metragens" placeholder="45m², 60m²" defaultValue={editingEmp.metragens || ''} style={{width: '100%', padding: '0.75rem', border: '2px solid #8D927D', borderRadius: '0.5rem', fontSize: '1rem'}} /></div>
-                                            <button type="submit" style={{background: '#8D927D', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', fontSize: '1.125rem', cursor: 'pointer', marginTop: '1rem'}}>{editingEmp.nome ? '✓ Salvar' : '+ Cadastrar'}</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-                        <BottomNav />
+                detalhes = `
+                    <div style="background: linear-gradient(135deg, #8D927D, #493928); padding: 1.5rem; border-radius: 0.75rem; color: white;">
+                        <p style="opacity: 0.9; margin-bottom: 0.5rem;">Ganho Total</p>
+                        <p style="font-size: 1.75rem; font-weight: bold;">R$ ${(valorFinal - valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                     </div>
-                );
+                `;
             }
 
-            // CONFIG SCREEN
-            if (screen === 'config') {
-                const hasPin = localStorage.getItem('calOliveirasPin');
-                return (
-                    <div style={{paddingBottom: '5rem', minHeight: '100vh', background: 'linear-gradient(135deg, #8D927D 0%, #493928 100%)'}}>
-                        <div style={{background: 'rgba(255,255,255,0.95)', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 10}}>
-                            <h1 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128'}}>⚙️ Configurações</h1>
-                        </div>
-                        <div style={{padding: '1.5rem'}}>
-                            <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                                    <div style={{width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #8D927D, #493928)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', color: 'white'}}>👤</div>
-                                    <div><p className="font-montserrat" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#313128'}}>{user?.name || 'Usuário'}</p><p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>{user?.email}</p></div>
-                                </div>
-                            </div>
-                            <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>🔒 Segurança</h3>
-                                <button onClick={() => setShowPinSetup(true)} style={{width: '100%', background: '#8D927D', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer', marginBottom: '0.75rem'}}>{hasPin ? '🔄 Alterar PIN' : '🔐 Configurar PIN'}</button>
-                                {hasPin && (<button onClick={() => { if (confirm('Remover PIN?')) { localStorage.removeItem('calOliveirasPin'); alert('PIN removido!'); }}} style={{width: '100%', background: '#ef4444', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>🗑️ Remover PIN</button>)}
-                            </div>
-                            <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>💾 Dados</h3>
-                                <div style={{marginBottom: '0.75rem'}}><p style={{fontSize: '0.875rem', color: '#a0b5a8'}}>Empreendimentos</p><p className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#8D927D'}}>{empreendimentos.length}</p></div>
-                                <button onClick={() => { if (confirm('Apagar tudo?')) { saveEmpreendimentos([]); alert('Dados limpos!'); }}} style={{width: '100%', background: '#ef4444', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>🗑️ Limpar Dados</button>
-                            </div>
-                            <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
-                                <h3 className="font-montserrat" style={{fontSize: '1.125rem', fontWeight: 'bold', color: '#313128', marginBottom: '1rem'}}>ℹ️ Sobre</h3>
-                                <p style={{fontSize: '0.875rem', color: '#a0b5a8', lineHeight: '1.5'}}>ROI Tracker Cal Oliveiras<br/>Versão 2.0 - Completa</p>
-                            </div>
-                            <button onClick={() => { if (confirm('Sair?')) { localStorage.removeItem('calOliveirasUser'); setUser(null); setScreen('login'); }}} style={{width: '100%', background: '#493928', color: 'white', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontWeight: 'bold', cursor: 'pointer'}}>🚪 Sair</button>
-                        </div>
-                        {showPinSetup && (
-                            <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem'}} onClick={() => setShowPinSetup(false)}>
-                                <div style={{background: 'white', width: '100%', maxWidth: '400px', borderRadius: '1.5rem', padding: '2rem'}} onClick={(e) => e.stopPropagation()}>
-                                    <div style={{textAlign: 'center', marginBottom: '1.5rem'}}><span style={{fontSize: '3rem'}}>🔐</span><h2 className="font-montserrat" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#313128', marginTop: '1rem'}}>{hasPin ? 'Alterar PIN' : 'Configurar PIN'}</h2><p style={{fontSize: '0.875rem', color: '#a0b5a8', marginTop: '0.5rem'}}>PIN de 4 dígitos</p></div>
-                                    <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.target); const pin = formData.get('pin'); const confirmPin = formData.get('confirmPin'); if (pin.length !== 4 || !/^\d+$/.test(pin)) { alert('PIN deve ter 4 números!'); return; } if (pin !== confirmPin) { alert('PINs não coincidem!'); return; } localStorage.setItem('calOliveirasPin', pin); alert('PIN configurado!'); setShowPinSetup(false); }}>
-                                        <div style={{marginBottom: '1rem'}}><label style={{display: 'block', fontSize: '0.875rem',
+            // Semáforo
+            let semaforo = roiAnualizado >= 12 ? 'verde' : roiAnualizado >= 6 ? 'amarelo' : 'vermelho';
+            let semaforoIcon = semaforo === 'verde' ? '🟢' : semaforo === 'amarelo' ? '🟡' : '🔴';
+            let semaforoText = semaforo === 'verde' ? 'EXCELENTE INVESTIMENTO' : semaforo === 'amarelo' ? 'INVESTIMENTO MODERADO' : 'INVESTIMENTO BAIXO RETORNO';
+
+            document.getElementById('semaforoDiv').className = `semaforo ${semaforo}`;
+            document.getElementById('semaforoDiv').innerHTML = `<div style="font-size: 2.5rem;">${semaforoIcon}</div><p>${semaforoText}</p>`;
+            document.getElementById('roiNominal').textContent = roiNominal.toFixed(2) + '%';
+            document.getElementById('roiAnual').textContent = roiAnualizado.toFixed(2) + '% ao ano';
+            document.getElementById('roiReal').textContent = roiReal.toFixed(2) + '%';
+            document.getElementById('periodo').textContent = periodo;
+            document.getElementById('detalhes').innerHTML = detalhes;
+
+            document.getElementById('simForm').classList.add('hide');
+            document.getElementById('resultado').classList.remove('hide');
+        }
+
+        function novaSimulacao() {
+            document.getElementById('resultado').classList.add('hide');
+            document.getElementById('simForm').classList.remove('hide');
+        }
+    </script>
+</body>
+</html>
