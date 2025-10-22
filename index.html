@@ -4,337 +4,991 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROI Tracker Cal Oliveiras</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #8D927D 0%, #493928 100%); min-height: 100vh; }
-        .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
-        .card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .header { background: rgba(255,255,255,0.95); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { color: #313128; font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; }
-        h2 { color: #313128; font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; }
-        .btn { width: 100%; background: linear-gradient(135deg, #8D927D, #493928); color: white; border: none; padding: 1rem; border-radius: 0.75rem; font-weight: bold; font-size: 1.125rem; cursor: pointer; margin-top: 0.5rem; }
-        .btn:hover { opacity: 0.9; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            -webkit-font-smoothing: antialiased; 
+            overflow-x: hidden;
+            background: #f5f5f5;
+        }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        /* SISTEMA DE SCREENS */
+        .screen { 
+            display: none; 
+            min-height: 100vh; 
+            padding-bottom: 5rem; 
+        }
+        .screen.active { 
+            display: block !important; 
+        }
+        
+        /* SPLASH E LOGIN SEM PADDING BOTTOM */
+        #splash, #login {
+            padding-bottom: 0 !important;
+        }
+        
+        /* SPLASH ESPECÍFICO */
+        #splash.active {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding-bottom: 0;
+        }
+        
+        .gradient-bg { background: linear-gradient(135deg, #8D927D 0%, #493928 100%); }
+        .card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .btn { 
+            padding: 1rem; 
+            border: none; 
+            border-radius: 0.75rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1rem;
+            width: 100%;
+        }
+        .btn-primary { background: linear-gradient(135deg, #8D927D, #493928); color: white; }
         .btn-secondary { background: white; border: 2px solid #8D927D; color: #313128; }
-        .btn-success { background: #10b981; }
-        .btn-danger { background: #ef4444; }
-        input, select { width: 100%; padding: 0.75rem; border: 2px solid #8D927D; border-radius: 0.5rem; font-size: 1rem; margin-top: 0.5rem; }
-        label { display: block; font-size: 0.875rem; font-weight: bold; color: #313128; margin-top: 1rem; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .result { background: #f0f4f1; padding: 1.5rem; border-radius: 0.75rem; text-align: center; margin: 1rem 0; }
-        .result-big { font-size: 2.5rem; color: #8D927D; font-weight: bold; }
-        .semaforo { padding: 1rem; border-radius: 0.75rem; text-align: center; margin-bottom: 1rem; color: white; font-weight: bold; }
-        .verde { background: #10b981; }
-        .amarelo { background: #f59e0b; }
-        .vermelho { background: #ef4444; }
-        .hide { display: none; }
-        .nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1rem; }
-        .nav-btn { background: white; border: 2px solid #8D927D; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: pointer; font-size: 0.875rem; font-weight: bold; color: #313128; }
-        .nav-btn.active { background: #8D927D; color: white; }
-        .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #8D927D 0%, #493928 100%); display: flex; align-items: center; justify-content: center; color: white; z-index: 1000; }
-        .splash-content { text-align: center; }
-        .logo { font-size: 5rem; margin-bottom: 1rem; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #8D927D;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+        .label { 
+            display: block; 
+            font-size: 0.875rem; 
+            font-weight: bold; 
+            color: #313128; 
+            margin-bottom: 0.5rem; 
+        }
+        
+        /* BOTTOM NAV - ESCONDIDO POR PADRÃO */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: none;
+            justify-content: space-around;
+            padding: 0.75rem 0;
+            z-index: 100;
+        }
+        
+        /* MOSTRAR BOTTOM NAV APENAS NAS TELAS PRINCIPAIS */
+        .bottom-nav.visible {
+            display: flex;
+        }
+        
+        .nav-item {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            flex: 1;
+        }
+        .nav-icon { font-size: 1.5rem; opacity: 0.5; }
+        .nav-label { font-size: 0.7rem; color: #9ca3af; }
+        .nav-item.active .nav-icon { opacity: 1; }
+        .nav-item.active .nav-label { color: #8D927D; font-weight: bold; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: flex-end;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-height: 90vh;
+            overflow: auto;
+            border-radius: 1.5rem 1.5rem 0 0;
+            padding: 1.5rem;
+        }
+        .header {
+            background: rgba(255,255,255,0.95);
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .badge {
+            display: inline-block;
+            background: #8D927D;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+        .reforco-item {
+            background: #f9faf9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
     </style>
 </head>
 <body>
-    <div id="splash" class="splash">
-        <div class="splash-content">
-            <div class="logo">🏢</div>
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Cal Oliveiras</h1>
-            <p style="opacity: 0.9;">Corretor Particular</p>
-            <div class="spinner"></div>
+
+<!-- SPLASH SCREEN -->
+<div id="splash" class="screen active gradient-bg">
+    <div style="text-align: center; color: white; animation: fadeIn 1s ease-in;">
+        <div style="font-size: 5rem; margin-bottom: 1rem;">🏢</div>
+        <h1 class="font-montserrat" style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">Cal Oliveiras</h1>
+        <p style="font-size: 1rem; opacity: 0.9;">Corretor Particular</p>
+        <div style="margin-top: 3rem;">
+            <div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
         </div>
     </div>
+</div>
 
-    <div id="app" class="hide">
-        <div id="login" class="hide">
-            <div class="container">
-                <div class="header" style="text-align: center;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🏢</div>
-                    <h1>Cal Oliveiras</h1>
-                    <p style="color: #a0b5a8;">ROI Tracker - Brusque Edition</p>
+<!-- LOGIN SCREEN -->
+<div id="login" class="screen gradient-bg" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <div style="width: 100%; max-width: 400px;">
+        <div style="text-align: center; margin-bottom: 3rem; color: white;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🏢</div>
+            <h1 class="font-montserrat" style="font-size: 1.75rem; font-weight: bold; margin-bottom: 0.5rem;">Cal Oliveiras</h1>
+            <p style="font-size: 0.875rem; opacity: 0.9;">ROI Tracker - Brusque Edition</p>
+        </div>
+        <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 1.5rem; border-radius: 1rem; margin-bottom: 2rem; text-align: center;">
+            <p style="color: white; font-size: 0.9rem; font-style: italic; line-height: 1.6;">"O dinheiro é feito na COMPRA,<br/>não na venda."</p>
+        </div>
+        <form id="loginForm" style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div style="margin-bottom: 1.25rem;">
+                <label class="label">Nome Completo</label>
+                <input name="name" required class="input-field" placeholder="Seu nome" />
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label class="label">E-mail</label>
+                <input name="email" type="email" required class="input-field" placeholder="seu@email.com" />
+            </div>
+            <button type="submit" class="btn btn-primary font-montserrat">Entrar →</button>
+        </form>
+    </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen gradient-bg">
+    <div class="header">
+        <h2 class="font-montserrat" style="font-size: 1.25rem; font-weight: bold; color: #313128;" id="welcomeText">Olá, Investidor! 👋</h2>
+        <p style="font-size: 0.875rem; color: #a0b5a8; margin-top: 0.25rem;">Bem-vindo ao seu tracker de ROI</p>
+    </div>
+    <div style="padding: 1.5rem;">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <p style="font-size: 0.875rem; color: #a0b5a8;">Empreendimentos</p>
+                    <p class="font-montserrat" style="font-size: 2rem; font-weight: bold; color: #8D927D;" id="empCount">0</p>
                 </div>
-                <div class="card">
-                    <p style="text-align: center; font-style: italic; color: #a0b5a8; margin-bottom: 1.5rem;">"O dinheiro é feito na COMPRA, não na venda."</p>
-                    <label>Nome Completo</label>
-                    <input type="text" id="userName" placeholder="Seu nome" required>
-                    <label>E-mail</label>
-                    <input type="email" id="userEmail" placeholder="seu@email.com" required>
-                    <button class="btn" onclick="login()">Entrar →</button>
-                </div>
+                <span style="font-size: 3rem;">🏢</span>
             </div>
         </div>
-
-        <div id="home" class="hide">
-            <div class="container">
-                <div class="header">
-                    <h1 id="welcomeName">Olá! 👋</h1>
-                    <p style="color: #a0b5a8;">Bem-vindo ao seu tracker de ROI</p>
-                </div>
-                <div class="card">
-                    <h2>📊 Simulador ROI</h2>
-                    <p style="color: #a0b5a8; margin-bottom: 1rem;">Calcule seus investimentos</p>
-                    <button class="btn" onclick="showScreen('simulador')">Acessar Simulador →</button>
-                </div>
-                <div class="card">
-                    <h2>🏢 Empreendimentos</h2>
-                    <p style="color: #a0b5a8; margin-bottom: 1rem;">Banco de lançamentos</p>
-                    <button class="btn btn-secondary" onclick="showScreen('empreendimentos')">Ver Empreendimentos →</button>
+        <button onclick="navigateTo('simulador')" class="card" style="cursor: pointer; border: 2px solid #8D927D; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="font-size: 1.75rem;">📊</span>
+                <div style="text-align: left;">
+                    <p class="font-montserrat" style="font-weight: bold; font-size: 1.125rem;">Simulador ROI</p>
+                    <p style="font-size: 0.75rem; color: #a0b5a8;">Calcule seus investimentos</p>
                 </div>
             </div>
-        </div>
-
-        <div id="simulador" class="hide">
-            <div class="container">
-                <div class="header">
-                    <h1>📊 Simulador ROI</h1>
+            <span style="font-size: 1.875rem; color: #493928;">→</span>
+        </button>
+        <button onclick="navigateTo('empreendimentos')" class="card" style="cursor: pointer; border: 2px solid #8D927D; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="font-size: 1.75rem;">🏢</span>
+                <div style="text-align: left;">
+                    <p class="font-montserrat" style="font-weight: bold; font-size: 1.125rem;">Empreendimentos</p>
+                    <p style="font-size: 0.75rem; color: #a0b5a8;">Banco de lançamentos</p>
                 </div>
+            </div>
+            <span style="font-size: 1.875rem; color: #493928;">→</span>
+        </button>
+    </div>
+</div>
 
-                <div id="simForm">
-                    <div class="card">
-                        <h2>Tipo de Imóvel</h2>
-                        <div class="grid-2">
-                            <button class="btn" id="btnPlanta" onclick="setTipo('planta')" style="background: #8D927D;">🏗️ Na Planta</button>
-                            <button class="btn btn-secondary" id="btnPronto" onclick="setTipo('pronto')">🏠 Pronto</button>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h2>Dados Básicos</h2>
-                        <label>Valor do Imóvel (R$)</label>
-                        <input type="number" id="valorImovel" placeholder="350000">
-                        <label>Entrada (R$)</label>
-                        <input type="number" id="entrada" placeholder="70000">
-
-                        <div id="camposPlanta">
-                            <label>Duração da Obra (meses)</label>
-                            <input type="number" id="mesesObra" placeholder="24" value="24">
-                            <label>Parcelas Mensais Durante Obra (R$)</label>
-                            <input type="number" id="parcelasObra" placeholder="2000">
-                            
-                            <h2 style="margin-top: 1.5rem;">Índice de Correção</h2>
-                            <div class="grid-2">
-                                <button class="btn" id="btnINCC" onclick="setIndice('INCC')" style="background: #493928;">INCC</button>
-                                <button class="btn btn-secondary" id="btnCUB" onclick="setIndice('CUB')">CUB</button>
-                            </div>
-                            <label>Taxa Mensal <span id="indiceLabel">INCC</span> (%)</label>
-                            <input type="number" step="0.1" id="taxaIndice" value="0.5">
-                            <label>Valorização Durante Obra (% a.a.)</label>
-                            <input type="number" step="0.1" id="valorizacaoObra" value="5">
-                        </div>
-
-                        <div id="camposPronto" class="hide">
-                            <label>Valorização Anual (%)</label>
-                            <input type="number" step="0.1" id="valorizacaoPronto" value="3">
-                        </div>
-
-                        <h2 style="margin-top: 1.5rem;">Projeções</h2>
-                        <label>Aluguel Mensal Estimado (R$)</label>
-                        <input type="number" id="aluguel" placeholder="1500">
-                        <label>Custos Mensais (R$)</label>
-                        <input type="number" id="custos" placeholder="300">
-                        <label>Taxa Selic Anual (% - comparação)</label>
-                        <input type="number" step="0.01" id="selic" value="10.75">
-
-                        <button class="btn" onclick="calcular()">Calcular ROI</button>
-                    </div>
+<!-- SIMULADOR SCREEN -->
+<div id="simulador" class="screen gradient-bg">
+    <div class="header">
+        <h1 class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #313128;">📊 Simulador ROI</h1>
+    </div>
+    <div style="padding: 1.5rem;">
+        <div class="card" id="simForm">
+            <h3 class="font-montserrat" style="font-size: 1.125rem; font-weight: bold; color: #313128; margin-bottom: 1.5rem;">Dados do Investimento</h3>
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <label class="label">Valor do Imóvel (R$)</label>
+                    <input type="number" id="valorImovel" class="input-field" placeholder="350000" />
                 </div>
-
-                <div id="resultado" class="hide">
-                    <div class="card">
-                        <div id="semaforoDiv" class="semaforo verde">
-                            <div style="font-size: 2.5rem;">🟢</div>
-                            <p id="semaforoText">EXCELENTE INVESTIMENTO</p>
-                        </div>
-
-                        <div class="result">
-                            <p style="color: #a0b5a8; margin-bottom: 0.5rem;">ROI Nominal</p>
-                            <div class="result-big" id="roiNominal">0%</div>
-                            <p style="color: #a0b5a8; margin-top: 0.5rem;" id="roiAnual">0% ao ano</p>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                            <div style="background: #f9faf9; padding: 1rem; border-radius: 0.5rem; text-align: center;">
-                                <p style="font-size: 0.75rem; color: #a0b5a8;">ROI Real</p>
-                                <p style="font-size: 1.25rem; font-weight: bold;" id="roiReal">0%</p>
-                            </div>
-                            <div style="background: #f9faf9; padding: 1rem; border-radius: 0.5rem; text-align: center;">
-                                <p style="font-size: 0.75rem; color: #a0b5a8;">Período</p>
-                                <p style="font-size: 1.25rem; font-weight: bold;" id="periodo">0</p>
-                            </div>
-                        </div>
-
-                        <div id="detalhes"></div>
-
-                        <button class="btn btn-secondary" onclick="novaSimulacao()">Nova Simulação</button>
+                <div>
+                    <label class="label">Valor de Entrada (R$)</label>
+                    <input type="number" id="valorEntrada" class="input-field" placeholder="70000" />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="label">Valorização Anual (%)</label>
+                        <input type="number" id="taxaValorizacao" class="input-field" value="5" />
+                    </div>
+                    <div>
+                        <label class="label">Período (anos)</label>
+                        <input type="number" id="periodoAnos" class="input-field" value="5" />
                     </div>
                 </div>
+                <div>
+                    <label class="label">Aluguel Mensal (R$)</label>
+                    <input type="number" id="aluguelMensal" class="input-field" placeholder="1500" />
+                </div>
+                <div>
+                    <label class="label">Custos Mensais (R$)</label>
+                    <input type="number" id="custosMensais" class="input-field" placeholder="300" />
+                    <p style="font-size: 0.75rem; color: #a0b5a8; margin-top: 0.25rem;">Condomínio, IPTU, manutenção</p>
+                </div>
+                <button onclick="calcularROI()" class="btn btn-primary" style="margin-top: 1rem;">Calcular ROI</button>
             </div>
         </div>
-
-        <div id="empreendimentos" class="hide">
-            <div class="container">
-                <div class="header">
-                    <h1>🏢 Empreendimentos</h1>
+        <div id="simResult" style="display: none;">
+            <div class="card">
+                <h3 class="font-montserrat" style="font-size: 1.25rem; font-weight: bold; color: #313128; margin-bottom: 1rem;">Resultado da Simulação</h3>
+                <div style="background: #f0f4f1; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; text-align: center;">
+                    <p style="font-size: 0.875rem; color: #a0b5a8; margin-bottom: 0.5rem;">ROI Total</p>
+                    <p class="font-montserrat" style="font-size: 2.5rem; font-weight: bold; color: #8D927D;" id="roiTotal">0%</p>
+                    <p style="font-size: 0.875rem; color: #a0b5a8; margin-top: 0.25rem;" id="roiAnual">0% ao ano</p>
                 </div>
-                <div class="card" style="text-align: center;">
-                    <div style="font-size: 4rem;">🏗️</div>
-                    <h2>Em breve!</h2>
-                    <p style="color: #a0b5a8;">Funcionalidade em desenvolvimento</p>
+                <div style="display: grid; gap: 1rem;">
+                    <div style="padding: 1rem; background: #f9faf9; border-radius: 0.5rem;">
+                        <p style="font-size: 0.875rem; color: #a0b5a8;">Investimento Inicial</p>
+                        <p class="font-montserrat" style="font-size: 1.25rem; font-weight: bold; color: #313128;" id="investInicial">R$ 0</p>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="padding: 1rem; background: #f9faf9; border-radius: 0.5rem;">
+                            <p style="font-size: 0.875rem; color: #a0b5a8;">Valor Atual</p>
+                            <p class="font-montserrat" style="font-size: 1rem; font-weight: bold; color: #313128;" id="valorAtual">R$ 0</p>
+                        </div>
+                        <div style="padding: 1rem; background: #f9faf9; border-radius: 0.5rem;">
+                            <p style="font-size: 0.875rem; color: #a0b5a8;">Valor Futuro</p>
+                            <p class="font-montserrat" style="font-size: 1rem; font-weight: bold; color: #8D927D;" id="valorFuturo">R$ 0</p>
+                        </div>
+                    </div>
+                    <div style="padding: 1rem; background: #f9faf9; border-radius: 0.5rem;">
+                        <p style="font-size: 0.875rem; color: #a0b5a8;">Valorização do Imóvel</p>
+                        <p class="font-montserrat" style="font-size: 1.25rem; font-weight: bold; color: #8D927D;" id="valorizacao">R$ 0</p>
+                    </div>
+                    <div id="rendaAluguelDiv" style="padding: 1rem; background: #f9faf9; border-radius: 0.5rem; display: none;">
+                        <p style="font-size: 0.875rem; color: #a0b5a8;">Renda de Aluguel (líquida)</p>
+                        <p class="font-montserrat" style="font-size: 1.25rem; font-weight: bold; color: #8D927D;" id="rendaAluguel">R$ 0</p>
+                    </div>
+                    <div style="padding: 1.5rem; background: linear-gradient(135deg, #8D927D, #493928); border-radius: 0.75rem;">
+                        <p style="font-size: 0.875rem; color: rgba(255,255,255,0.9); margin-bottom: 0.5rem;">Ganho Total Estimado</p>
+                        <p class="font-montserrat" style="font-size: 1.75rem; font-weight: bold; color: white;" id="ganhoTotal">R$ 0</p>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="container">
-            <div class="nav">
-                <div class="nav-btn active" onclick="showScreen('home')">🏠<br>Home</div>
-                <div class="nav-btn" onclick="showScreen('simulador')">📊<br>Simulador</div>
-                <div class="nav-btn" onclick="showScreen('fluxo')">💳<br>Fluxo</div>
-                <div class="nav-btn" onclick="showScreen('empreendimentos')">🏢<br>Empreend.</div>
-                <div class="nav-btn" onclick="showScreen('config')">⚙️<br>Config</div>
-            </div>
+            <button onclick="novaSimulacao()" class="btn btn-secondary">Nova Simulação</button>
         </div>
     </div>
+</div>
 
-    <script>
-        let currentTipo = 'planta';
-        let currentIndice = 'INCC';
-
-        setTimeout(() => {
-            document.getElementById('splash').classList.add('hide');
-            document.getElementById('app').classList.remove('hide');
-            const saved = localStorage.getItem('calUser');
-            if(saved) {
-                const user = JSON.parse(saved);
-                document.getElementById('welcomeName').textContent = `Olá, ${user.name.split(' ')[0]}! 👋`;
-                showScreen('home');
-            } else {
-                showScreen('login');
-            }
-        }, 2500);
-
-        function login() {
-            const name = document.getElementById('userName').value;
-            const email = document.getElementById('userEmail').value;
-            if(!name || !email) { alert('Preencha todos os campos!'); return; }
-            localStorage.setItem('calUser', JSON.stringify({name, email}));
-            document.getElementById('welcomeName').textContent = `Olá, ${name.split(' ')[0]}! 👋`;
-            showScreen('home');
-        }
-
-        function showScreen(screen) {
-            ['login', 'home', 'simulador', 'empreendimentos'].forEach(s => {
-                document.getElementById(s).classList.add('hide');
-            });
-            document.getElementById(screen).classList.remove('hide');
+<!-- FLUXO DE PAGAMENTO SCREEN -->
+<div id="fluxo" class="screen gradient-bg">
+    <div class="header">
+        <h1 class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #313128;">💳 Fluxo de Pagamento</h1>
+    </div>
+    <div style="padding: 1.5rem;">
+        <div id="fluxoEmpty" class="card" style="text-align: center; padding: 3rem;">
+            <span style="font-size: 4rem;">💳</span>
+            <h3 class="font-montserrat" style="font-size: 1.25rem; margin-top: 1rem; color: #313128;">Nenhuma unidade selecionada</h3>
+            <p style="color: #a0b5a8; margin-top: 0.5rem;">Vá em Empreendimentos e envie uma unidade para o fluxo</p>
+        </div>
+        <div id="fluxoContent" style="display: none;">
+            <div class="card">
+                <h3 class="font-montserrat" style="font-size: 1.125rem; font-weight: bold; color: #313128; margin-bottom: 0.5rem;" id="fluxoUnidade">Unidade</h3>
+                <p style="font-size: 0.875rem; color: #a0b5a8;" id="fluxoEmpreendimento">Empreendimento</p>
+                <p class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #8D927D; margin-top: 1rem;" id="fluxoValorTotal">R$ 0</p>
+            </div>
             
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            if(screen !== 'login') {
-                const navBtns = document.querySelectorAll('.nav-btn');
-                const map = {home: 0, simulador: 1, fluxo: 2, empreendimentos: 3, config: 4};
-                if(map[screen] !== undefined) navBtns[map[screen]].classList.add('active');
-            }
-        }
-
-        function setTipo(tipo) {
-            currentTipo = tipo;
-            document.getElementById('btnPlanta').className = tipo === 'planta' ? 'btn' : 'btn btn-secondary';
-            document.getElementById('btnPlanta').style.background = tipo === 'planta' ? '#8D927D' : '';
-            document.getElementById('btnPronto').className = tipo === 'pronto' ? 'btn' : 'btn btn-secondary';
-            document.getElementById('btnPronto').style.background = tipo === 'pronto' ? '#8D927D' : '';
-            document.getElementById('camposPlanta').classList.toggle('hide', tipo !== 'planta');
-            document.getElementById('camposPronto').classList.toggle('hide', tipo !== 'pronto');
-        }
-
-        function setIndice(indice) {
-            currentIndice = indice;
-            document.getElementById('btnINCC').className = indice === 'INCC' ? 'btn' : 'btn btn-secondary';
-            document.getElementById('btnINCC').style.background = indice === 'INCC' ? '#493928' : '';
-            document.getElementById('btnCUB').className = indice === 'CUB' ? 'btn' : 'btn btn-secondary';
-            document.getElementById('btnCUB').style.background = indice === 'CUB' ? '#493928' : '';
-            document.getElementById('indiceLabel').textContent = indice;
-        }
-
-        function calcular() {
-            const valor = parseFloat(document.getElementById('valorImovel').value);
-            const entrada = parseFloat(document.getElementById('entrada').value);
-
-            if(!valor || !entrada) { alert('Preencha valor do imóvel e entrada!'); return; }
-
-            let roiNominal, roiReal, roiAnualizado, periodo, detalhes;
-
-            if(currentTipo === 'planta') {
-                const meses = parseInt(document.getElementById('mesesObra').value) || 24;
-                const parcela = parseFloat(document.getElementById('parcelasObra').value) || 0;
-                const taxa = parseFloat(document.getElementById('taxaIndice').value) / 100;
-                const valorizacao = parseFloat(document.getElementById('valorizacaoObra').value) / 100;
-                const selic = parseFloat(document.getElementById('selic').value) / 100;
-
-                let totalParcelas = 0;
-                for(let i = 0; i < meses; i++) {
-                    totalParcelas += parcela * Math.pow(1 + taxa, i);
-                }
-
-                const valorFinal = valor * Math.pow(1 + valorizacao/12, meses);
-                const totalInvestido = entrada + totalParcelas;
-                roiNominal = ((valorFinal - totalInvestido) / totalInvestido) * 100;
-                roiReal = ((1 + roiNominal/100) / Math.pow(1.042, meses/12) - 1) * 100;
-                roiAnualizado = (Math.pow(1 + roiNominal/100, 12/meses) - 1) * 100;
-                periodo = `${meses} meses`;
-
-                const rendSelic = totalInvestido * (Math.pow(1 + selic, meses/12) - 1);
-                const vsSelic = (valorFinal - totalInvestido) - rendSelic;
-
-                detalhes = `
-                    <div style="background: #f9faf9; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                        <p style="color: #a0b5a8; font-size: 0.875rem;">Investimento Total</p>
-                        <p style="font-size: 1.25rem; font-weight: bold;">R$ ${totalInvestido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+            <div class="card">
+                <h3 class="font-montserrat" style="font-size: 1rem; font-weight: bold; color: #313128; margin-bottom: 1.5rem;">📍 Entrada (Pré-Chaves)</h3>
+                <div style="display: grid; gap: 1rem;">
+                    <div>
+                        <label class="label">Ato/Sinal (R$)</label>
+                        <input type="number" id="fluxoAto" class="input-field" placeholder="50000" onchange="calcularFluxo()" />
                     </div>
-                    <div style="background: linear-gradient(135deg, #8D927D, #493928); padding: 1.5rem; border-radius: 0.75rem; color: white;">
-                        <p style="opacity: 0.9; margin-bottom: 0.5rem;">vs Selic (${selic.toFixed(2)}% a.a.)</p>
-                        <p style="font-size: 1.5rem; font-weight: bold;">${vsSelic >= 0 ? '+' : ''}R$ ${vsSelic.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                        <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.5rem;">${vsSelic >= 0 ? 'Melhor que Selic ✓' : 'Pior que Selic ✗'}</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="label">Qtd Parcelas</label>
+                            <input type="number" id="fluxoParcelas" class="input-field" value="36" onchange="calcularFluxo()" />
+                        </div>
+                        <div>
+                            <label class="label">Valor Parcela (R$)</label>
+                            <input type="number" id="fluxoValorParcela" class="input-field" placeholder="2000" onchange="calcularFluxo()" />
+                        </div>
                     </div>
-                `;
-            } else {
-                const valorizacao = parseFloat(document.getElementById('valorizacaoPronto').value) / 100;
-                const anos = 5;
-                const valorFinal = valor * Math.pow(1 + valorizacao, anos);
-                roiNominal = ((valorFinal - valor) / entrada) * 100;
-                roiReal = ((1 + roiNominal/100) / Math.pow(1.042, anos) - 1) * 100;
-                roiAnualizado = roiNominal / anos;
-                periodo = `${anos} anos`;
-
-                detalhes = `
-                    <div style="background: linear-gradient(135deg, #8D927D, #493928); padding: 1.5rem; border-radius: 0.75rem; color: white;">
-                        <p style="opacity: 0.9; margin-bottom: 0.5rem;">Ganho Total</p>
-                        <p style="font-size: 1.75rem; font-weight: bold;">R$ ${(valorFinal - valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                    <div>
+                        <label class="label">Quantos Reforços/Balões?</label>
+                        <select id="fluxoQtdReforcos" class="input-field" onchange="gerarCamposReforcos()">
+                            <option value="0">Nenhum</option>
+                            <option value="1">1 Reforço</option>
+                            <option value="2">2 Reforços</option>
+                            <option value="3">3 Reforços</option>
+                            <option value="4">4 Reforços</option>
+                        </select>
                     </div>
-                `;
-            }
+                    <div id="reforcosContainer"></div>
+                    <div style="background: #f0f4f1; padding: 1rem; border-radius: 0.5rem; margin-top: 0.5rem;">
+                        <p style="font-size: 0.875rem; color: #a0b5a8;">Total da Entrada</p>
+                        <p class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #8D927D;" id="fluxoTotalEntrada">R$ 0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 class="font-montserrat" style="font-size: 1rem; font-weight: bold; color: #313128; margin-bottom: 1.5rem;">💰 Saldo Devedor</h3>
+                <div style="background: #f9faf9; padding: 1.5rem; border-radius: 0.75rem; text-align: center; margin-bottom: 1.5rem;">
+                    <p style="font-size: 0.875rem; color: #a0b5a8; margin-bottom: 0.5rem;">Saldo Restante</p>
+                    <p class="font-montserrat" style="font-size: 2rem; font-weight: bold; color: #493928;" id="fluxoSaldo">R$ 0</p>
+                </div>
+                <label class="label">Forma de Pagamento do Saldo</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <button onclick="selecionarPagamento('financiamento')" class="btn" id="btnFinanciamento" style="background: #f3f4f6; color: #313128;">🏦 Financiamento</button>
+                    <button onclick="selecionarPagamento('vista')" class="btn" id="btnVista" style="background: #f3f4f6; color: #313128;">💵 Quitar à Vista</button>
+                </div>
+                <div id="financiamentoFields" style="display: none; margin-top: 1.5rem;">
+                    <div style="display: grid; gap: 1rem;">
+                        <div>
+                            <label class="label">Taxa de Juros (% a.a.)</label>
+                            <input type="number" id="taxaJuros" class="input-field" value="10" step="0.1" />
+                        </div>
+                        <div>
+                            <label class="label">Prazo (anos)</label>
+                            <input type="number" id="prazoFinanciamento" class="input-field" value="20" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="salvarFluxo()" class="btn btn-success">✓ Salvar Fluxo de Pagamento</button>
+            <button onclick="limparFluxo()" class="btn btn-secondary" style="margin-top: 0.5rem;">↻ Nova Simulação</button>
+        </div>
+    </div>
+</div>
 
-            // Semáforo
-            let semaforo = roiAnualizado >= 12 ? 'verde' : roiAnualizado >= 6 ? 'amarelo' : 'vermelho';
-            let semaforoIcon = semaforo === 'verde' ? '🟢' : semaforo === 'amarelo' ? '🟡' : '🔴';
-            let semaforoText = semaforo === 'verde' ? 'EXCELENTE INVESTIMENTO' : semaforo === 'amarelo' ? 'INVESTIMENTO MODERADO' : 'INVESTIMENTO BAIXO RETORNO';
+<!-- EMPREENDIMENTOS SCREEN -->
+<div id="empreendimentos" class="screen gradient-bg">
+    <div class="header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #313128;">🏢 Empreendimentos</h1>
+            <button onclick="abrirModalEmp()" class="btn btn-primary" style="width: auto; padding: 0.75rem 1.5rem;">+ Adicionar</button>
+        </div>
+    </div>
+    <div style="padding: 1.5rem;">
+        <div id="empEmpty" class="card" style="text-align: center; padding: 3rem;">
+            <span style="font-size: 4rem;">🏗️</span>
+            <h3 class="font-montserrat" style="font-size: 1.25rem; margin-top: 1rem; color: #313128;">Nenhum empreendimento cadastrado</h3>
+            <p style="color: #a0b5a8; margin-top: 0.5rem;">Clique em "+ Adicionar"</p>
+        </div>
+        <div id="empList"></div>
+    </div>
+</div>
 
-            document.getElementById('semaforoDiv').className = `semaforo ${semaforo}`;
-            document.getElementById('semaforoDiv').innerHTML = `<div style="font-size: 2.5rem;">${semaforoIcon}</div><p>${semaforoText}</p>`;
-            document.getElementById('roiNominal').textContent = roiNominal.toFixed(2) + '%';
-            document.getElementById('roiAnual').textContent = roiAnualizado.toFixed(2) + '% ao ano';
-            document.getElementById('roiReal').textContent = roiReal.toFixed(2) + '%';
-            document.getElementById('periodo').textContent = periodo;
-            document.getElementById('detalhes').innerHTML = detalhes;
+<!-- CONFIG SCREEN -->
+<div id="config" class="screen gradient-bg">
+    <div class="header">
+        <h1 class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #313128;">⚙️ Configurações</h1>
+    </div>
+    <div style="padding: 1.5rem;">
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #8D927D, #493928); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: white;">👤</div>
+                <div>
+                    <p class="font-montserrat" style="font-size: 1.25rem; font-weight: bold; color: #313128;" id="configNome">Usuário</p>
+                    <p style="font-size: 0.875rem; color: #a0b5a8;" id="configEmail">email@exemplo.com</p>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h3 class="font-montserrat" style="font-size: 1.125rem; font-weight: bold; color: #313128; margin-bottom: 1rem;">💾 Dados</h3>
+            <div style="margin-bottom: 0.75rem;">
+                <p style="font-size: 0.875rem; color: #a0b5a8;">Empreendimentos</p>
+                <p class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #8D927D;" id="configEmpCount">0</p>
+            </div>
+            <button onclick="limparDados()" class="btn btn-danger">🗑️ Limpar Dados</button>
+        </div>
+        <div class="card">
+            <h3 class="font-montserrat" style="font-size: 1.125rem; font-weight: bold; color: #313128; margin-bottom: 1rem;">ℹ️ Sobre</h3>
+            <p style="font-size: 0.875rem; color: #a0b5a8; line-height: 1.5;">ROI Tracker Cal Oliveiras<br/>Versão 2.3 FINAL<br/>Brusque Edition</p>
+        </div>
+        <button onclick="sair()" class="btn" style="background: #493928; color: white;">🚪 Sair</button>
+    </div>
+</div>
 
-            document.getElementById('simForm').classList.add('hide');
-            document.getElementById('resultado').classList.remove('hide');
+<!-- MODAL EMPREENDIMENTO -->
+<div id="modalEmp" class="modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+            <h2 class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #313128;" id="modalEmpTitle">Adicionar Empreendimento</h2>
+            <button onclick="fecharModalEmp()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">✕</button>
+        </div>
+        <form id="empForm">
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <label class="label">Nome do Empreendimento</label>
+                    <input name="nome" required class="input-field" />
+                </div>
+                <div>
+                    <label class="label">Construtora</label>
+                    <input name="construtora" required class="input-field" />
+                </div>
+                <div>
+                    <label class="label">Bairro</label>
+                    <input name="bairro" required class="input-field" />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="label">Status</label>
+                        <select name="status" required class="input-field">
+                            <option>Lançamento</option>
+                            <option>Em obras</option>
+                            <option>Pronto</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Tipo</label>
+                        <select name="tipo" required class="input-field">
+                            <option>Apartamento</option>
+                            <option>Casa</option>
+                            <option>Cobertura</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="label">Preço Mín (R$)</label>
+                        <input type="number" name="precoMin" required class="input-field" />
+                    </div>
+                    <div>
+                        <label class="label">Preço Máx (R$)</label>
+                        <input type="number" name="precoMax" required class="input-field" />
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="label">Período de Obra (meses)</label>
+                        <input type="number" name="periodoObra" value="24" class="input-field" />
+                    </div>
+                    <div>
+                        <label class="label">Parcelas Permitidas</label>
+                        <input type="number" name="parcelasPermitidas" value="36" class="input-field" />
+                    </div>
+                </div>
+                <div>
+                    <label class="label">Entrega Prevista</label>
+                    <input name="entrega" placeholder="Ex: Dez/2026" required class="input-field" />
+                </div>
+                <div>
+                    <label class="label">Metragens Disponíveis</label>
+                    <input name="metragens" placeholder="45m², 60m², 80m²" class="input-field" />
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">+ Cadastrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL DETALHES EMPREENDIMENTO -->
+<div id="modalDetalhes" class="modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+            <h2 class="font-montserrat" style="font-size: 1.5rem; font-weight: bold; color: #313128;" id="detalhesNome">Empreendimento</h2>
+            <button onclick="fecharModalDetalhes()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">✕</button>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <p style="color: #a0b5a8; font-size: 0.875rem;">Construtora</p>
+            <p class="font-montserrat" style="font-weight: bold; font-size: 1rem; color: #313128;" id="detalhesConstrutora"></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <p style="color: #a0b5a8; font-size: 0.875rem;">Bairro</p>
+                <p style="font-weight: bold; color: #313128;" id="detalhesBairro"></p>
+            </div>
+            <div>
+                <p style="color: #a0b5a8; font-size: 0.875rem;">Status</p>
+                <p style="font-weight: bold; color: #313128;" id="detalhesStatus"></p>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <p style="color: #a0b5a8; font-size: 0.875rem;">Período de Obra</p>
+                <p style="font-weight: bold; color: #313128;" id="detalhesPeriodoObra"></p>
+            </div>
+            <div>
+                <p style="color: #a0b5a8; font-size: 0.875rem;">Parcelas Permitidas</p>
+                <p style="font-weight: bold; color: #313128;" id="detalhesParcelasPermitidas"></p>
+            </div>
+        </div>
+        <div id="detalhesMetragens" style="margin-bottom: 1rem;"></div>
+        <div style="display: grid; gap: 0.75rem; margin-top: 1.5rem;">
+            <button onclick="enviarParaFluxo()" class="btn btn-success">💳 Enviar para Fluxo de Pagamento</button>
+            <button onclick="editarEmp()" class="btn" style="background: #8D927D; color: white;">✏️ Editar</button>
+            <button onclick="excluirEmp()" class="btn btn-danger">🗑️ Excluir</button>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM NAVIGATION -->
+<div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" onclick="navigateTo('home')" data-screen="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" onclick="navigateTo('simulador')" data-screen="simulador">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Simulador</span>
+    </button>
+    <button class="nav-item" onclick="navigateTo('fluxo')" data-screen="fluxo">
+        <span class="nav-icon">💳</span>
+        <span class="nav-label">Fluxo</span>
+    </button>
+    <button class="nav-item" onclick="navigateTo('empreendimentos')" data-screen="empreendimentos">
+        <span class="nav-icon">🏢</span>
+        <span class="nav-label">Empreend.</span>
+    </button>
+    <button class="nav-item" onclick="navigateTo('config')" data-screen="config">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Config</span>
+    </button>
+</div>
+
+<script>
+// ========== VARIÁVEIS GLOBAIS ==========
+let currentUser = null;
+let empreendimentos = [];
+let selectedEmpIndex = null;
+let fluxoData = null;
+
+// Telas onde o bottom nav deve aparecer
+const screensComBottomNav = ['home', 'simulador', 'fluxo', 'empreendimentos', 'config'];
+
+// ========== INICIALIZAÇÃO ==========
+window.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const savedUser = localStorage.getItem('calOliveirasUser');
+        const savedEmps = localStorage.getItem('calOliveirasEmpreendimentos');
+        
+        if (savedEmps) {
+            empreendimentos = JSON.parse(savedEmps);
         }
-
-        function novaSimulacao() {
-            document.getElementById('resultado').classList.add('hide');
-            document.getElementById('simForm').classList.remove('hide');
+        
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            navigateTo('home');
+        } else {
+            navigateTo('login');
         }
-    </script>
+    }, 2500);
+});
+
+// ========== NAVEGAÇÃO ==========
+function navigateTo(screenName) {
+    // Esconder todas as screens
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+    });
+    
+    // Mostrar a screen selecionada
+    const targetScreen = document.getElementById(screenName);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+    }
+    
+    // Controlar visibilidade do bottom nav
+    const bottomNav = document.getElementById('bottomNav');
+    if (screensComBottomNav.includes(screenName)) {
+        bottomNav.classList.add('visible');
+    } else {
+        bottomNav.classList.remove('visible');
+    }
+    
+    // Atualizar bottom nav
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-screen') === screenName) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Atualizar dados quando entrar em cada tela
+    if (screenName === 'home') atualizarHome();
+    if (screenName === 'empreendimentos') atualizarListaEmpreendimentos();
+    if (screenName === 'config') atualizarConfig();
+    if (screenName === 'fluxo') atualizarFluxo();
+}
+
+// ========== LOGIN ==========
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    currentUser = {
+        name: formData.get('name'),
+        email: formData.get('email')
+    };
+    localStorage.setItem('calOliveirasUser', JSON.stringify(currentUser));
+    navigateTo('home');
+});
+
+// ========== HOME ==========
+function atualizarHome() {
+    if (currentUser) {
+        document.getElementById('welcomeText').textContent = `Olá, ${currentUser.name.split(' ')[0]}! 👋`;
+    }
+    document.getElementById('empCount').textContent = empreendimentos.length;
+}
+
+// ========== SIMULADOR ==========
+function calcularROI() {
+    const valor = parseFloat(document.getElementById('valorImovel').value);
+    const entrada = parseFloat(document.getElementById('valorEntrada').value);
+    const taxa = parseFloat(document.getElementById('taxaValorizacao').value) / 100;
+    const anos = parseInt(document.getElementById('periodoAnos').value);
+    const aluguel = parseFloat(document.getElementById('aluguelMensal').value) || 0;
+    const custos = parseFloat(document.getElementById('custosMensais').value) || 0;
+    
+    if (!valor || !entrada) {
+        alert('Preencha valor do imóvel e entrada!');
+        return;
+    }
+    
+    const valorFuturo = valor * Math.pow(1 + taxa, anos);
+    const valorizacao = valorFuturo - valor;
+    const rendaTotal = (aluguel - custos) * 12 * anos;
+    const ganhoTotal = valorizacao + rendaTotal;
+    const roi = (ganhoTotal / entrada) * 100;
+    
+    document.getElementById('roiTotal').textContent = roi.toFixed(1) + '%';
+    document.getElementById('roiAnual').textContent = (roi / anos).toFixed(1) + '% ao ano';
+    document.getElementById('investInicial').textContent = 'R$ ' + entrada.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('valorAtual').textContent = 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 0});
+    document.getElementById('valorFuturo').textContent = 'R$ ' + valorFuturo.toLocaleString('pt-BR', {minimumFractionDigits: 0});
+    document.getElementById('valorizacao').textContent = 'R$ ' + valorizacao.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('ganhoTotal').textContent = 'R$ ' + ganhoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    
+    if (rendaTotal > 0) {
+        document.getElementById('rendaAluguelDiv').style.display = 'block';
+        document.getElementById('rendaAluguel').textContent = 'R$ ' + rendaTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    }
+    
+    document.getElementById('simForm').style.display = 'none';
+    document.getElementById('simResult').style.display = 'block';
+}
+
+function novaSimulacao() {
+    document.getElementById('simResult').style.display = 'none';
+    document.getElementById('simForm').style.display = 'block';
+    document.getElementById('valorImovel').value = '';
+    document.getElementById('valorEntrada').value = '';
+    document.getElementById('aluguelMensal').value = '';
+    document.getElementById('custosMensais').value = '';
+}
+
+// ========== FLUXO DE PAGAMENTO ==========
+function atualizarFluxo() {
+    if (fluxoData) {
+        document.getElementById('fluxoEmpty').style.display = 'none';
+        document.getElementById('fluxoContent').style.display = 'block';
+        
+        document.getElementById('fluxoUnidade').textContent = fluxoData.unidade || 'Unidade Selecionada';
+        document.getElementById('fluxoEmpreendimento').textContent = fluxoData.empreendimento || '';
+        document.getElementById('fluxoValorTotal').textContent = 'R$ ' + (fluxoData.valorTotal || 0).toLocaleString('pt-BR', {minimumFractionDigits: 0});
+        
+        if (fluxoData.parcelasPermitidas) {
+            document.getElementById('fluxoParcelas').value = fluxoData.parcelasPermitidas;
+        }
+    } else {
+        document.getElementById('fluxoEmpty').style.display = 'block';
+        document.getElementById('fluxoContent').style.display = 'none';
+    }
+}
+
+function gerarCamposReforcos() {
+    const qtd = parseInt(document.getElementById('fluxoQtdReforcos').value);
+    const container = document.getElementById('reforcosContainer');
+    container.innerHTML = '';
+    
+    for (let i = 1; i <= qtd; i++) {
+        const div = document.createElement('div');
+        div.className = 'reforco-item';
+        div.innerHTML = `
+            <label class="label">Reforço ${i}</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <input type="number" id="reforco${i}Valor" class="input-field" placeholder="Valor (R$)" onchange="calcularFluxo()" />
+                <input type="number" id="reforco${i}Mes" class="input-field" placeholder="Mês" onchange="calcularFluxo()" />
+            </div>
+        `;
+        container.appendChild(div);
+    }
+    
+    calcularFluxo();
+}
+
+function calcularFluxo() {
+    if (!fluxoData) return;
+    
+    const ato = parseFloat(document.getElementById('fluxoAto').value) || 0;
+    const qtdParcelas = parseInt(document.getElementById('fluxoParcelas').value) || 0;
+    const valorParcela = parseFloat(document.getElementById('fluxoValorParcela').value) || 0;
+    const qtdReforcos = parseInt(document.getElementById('fluxoQtdReforcos').value) || 0;
+    
+    let totalReforcos = 0;
+    for (let i = 1; i <= qtdReforcos; i++) {
+        const valor = parseFloat(document.getElementById('reforco' + i + 'Valor')?.value) || 0;
+        totalReforcos += valor;
+    }
+    
+    const totalParcelas = qtdParcelas * valorParcela;
+    const totalEntrada = ato + totalParcelas + totalReforcos;
+    const saldo = fluxoData.valorTotal - totalEntrada;
+    
+    document.getElementById('fluxoTotalEntrada').textContent = 'R$ ' + totalEntrada.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('fluxoSaldo').textContent = 'R$ ' + Math.max(0, saldo).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+}
+
+function selecionarPagamento(tipo) {
+    const btnFinanciamento = document.getElementById('btnFinanciamento');
+    const btnVista = document.getElementById('btnVista');
+    const fields = document.getElementById('financiamentoFields');
+    
+    if (tipo === 'financiamento') {
+        btnFinanciamento.style.background = '#8D927D';
+        btnFinanciamento.style.color = 'white';
+        btnVista.style.background = '#f3f4f6';
+        btnVista.style.color = '#313128';
+        fields.style.display = 'block';
+    } else {
+        btnVista.style.background = '#10b981';
+        btnVista.style.color = 'white';
+        btnFinanciamento.style.background = '#f3f4f6';
+        btnFinanciamento.style.color = '#313128';
+        fields.style.display = 'none';
+    }
+}
+
+function salvarFluxo() {
+    alert('Fluxo de pagamento salvo com sucesso! ✓');
+}
+
+function limparFluxo() {
+    fluxoData = null;
+    document.getElementById('fluxoAto').value = '';
+    document.getElementById('fluxoValorParcela').value = '';
+    document.getElementById('fluxoQtdReforcos').value = '0';
+    document.getElementById('reforcosContainer').innerHTML = '';
+    atualizarFluxo();
+}
+
+function enviarParaFluxo() {
+    if (selectedEmpIndex === null) return;
+    
+    const emp = empreendimentos[selectedEmpIndex];
+    const valorMedio = (parseFloat(emp.precoMin) + parseFloat(emp.precoMax)) / 2;
+    
+    fluxoData = {
+        empreendimento: emp.nome,
+        unidade: 'Unidade ' + emp.tipo,
+        valorTotal: valorMedio,
+        parcelasPermitidas: emp.parcelasPermitidas || 36
+    };
+    
+    fecharModalDetalhes();
+    navigateTo('fluxo');
+}
+
+// ========== EMPREENDIMENTOS ==========
+function atualizarListaEmpreendimentos() {
+    const empty = document.getElementById('empEmpty');
+    const list = document.getElementById('empList');
+    
+    if (empreendimentos.length === 0) {
+        empty.style.display = 'block';
+        list.innerHTML = '';
+    } else {
+        empty.style.display = 'none';
+        list.innerHTML = empreendimentos.map((emp, idx) => `
+            <div class="card" onclick="abrirDetalhes(${idx})" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="flex: 1;">
+                        <h3 class="font-montserrat" style="font-size: 1.125rem; font-weight: bold; color: #313128;">${emp.nome}</h3>
+                        <p style="font-size: 0.875rem; color: #a0b5a8; margin-top: 0.25rem;">${emp.construtora}</p>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+                            <span class="badge">${emp.bairro}</span>
+                            <span class="badge" style="background: ${emp.status === 'Lançamento' ? '#493928' : emp.status === 'Em obras' ? '#f59e0b' : '#10b981'};">${emp.status}</span>
+                        </div>
+                        <p class="font-montserrat" style="font-size: 1rem; font-weight: bold; color: #8D927D; margin-top: 0.75rem;">
+                            R$ ${Number(emp.precoMin).toLocaleString('pt-BR')} - R$ ${Number(emp.precoMax).toLocaleString('pt-BR')}
+                        </p>
+                    </div>
+                    <span style="font-size: 1.5rem;">→</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+function abrirModalEmp(index = null) {
+    selectedEmpIndex = index;
+    const modal = document.getElementById('modalEmp');
+    const form = document.getElementById('empForm');
+    
+    if (index !== null) {
+        const emp = empreendimentos[index];
+        document.getElementById('modalEmpTitle').textContent = 'Editar Empreendimento';
+        form.elements.nome.value = emp.nome;
+        form.elements.construtora.value = emp.construtora;
+        form.elements.bairro.value = emp.bairro;
+        form.elements.status.value = emp.status;
+        form.elements.tipo.value = emp.tipo;
+        form.elements.precoMin.value = emp.precoMin;
+        form.elements.precoMax.value = emp.precoMax;
+        form.elements.periodoObra.value = emp.periodoObra || 24;
+        form.elements.parcelasPermitidas.value = emp.parcelasPermitidas || 36;
+        form.elements.entrega.value = emp.entrega;
+        form.elements.metragens.value = emp.metragens || '';
+    } else {
+        document.getElementById('modalEmpTitle').textContent = 'Adicionar Empreendimento';
+        form.reset();
+    }
+    
+    modal.classList.add('active');
+}
+
+function fecharModalEmp() {
+    document.getElementById('modalEmp').classList.remove('active');
+    selectedEmpIndex = null;
+}
+
+document.getElementById('empForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const emp = {
+        nome: formData.get('nome'),
+        construtora: formData.get('construtora'),
+        bairro: formData.get('bairro'),
+        status: formData.get('status'),
+        tipo: formData.get('tipo'),
+        precoMin: formData.get('precoMin'),
+        precoMax: formData.get('precoMax'),
+        periodoObra: formData.get('periodoObra'),
+        parcelasPermitidas: formData.get('parcelasPermitidas'),
+        entrega: formData.get('entrega'),
+        metragens: formData.get('metragens')
+    };
+    
+    if (selectedEmpIndex !== null) {
+        empreendimentos[selectedEmpIndex] = emp;
+    } else {
+        empreendimentos.push(emp);
+    }
+    
+    localStorage.setItem('calOliveirasEmpreendimentos', JSON.stringify(empreendimentos));
+    fecharModalEmp();
+    atualizarListaEmpreendimentos();
+});
+
+function abrirDetalhes(index) {
+    selectedEmpIndex = index;
+    const emp = empreendimentos[index];
+    
+    document.getElementById('detalhesNome').textContent = emp.nome;
+    document.getElementById('detalhesConstrutora').textContent = emp.construtora;
+    document.getElementById('detalhesBairro').textContent = emp.bairro;
+    document.getElementById('detalhesStatus').textContent = emp.status;
+    document.getElementById('detalhesPeriodoObra').textContent = (emp.periodoObra || 24) + ' meses';
+    document.getElementById('detalhesParcelasPermitidas').textContent = (emp.parcelasPermitidas || 36) + ' parcelas';
+    
+    if (emp.metragens) {
+        document.getElementById('detalhesMetragens').innerHTML = `
+            <p style="color: #a0b5a8; font-size: 0.875rem;">Metragens</p>
+            <p style="font-weight: bold; color: #313128;">${emp.metragens}</p>
+        `;
+    } else {
+        document.getElementById('detalhesMetragens').innerHTML = '';
+    }
+    
+    document.getElementById('modalDetalhes').classList.add('active');
+}
+
+function fecharModalDetalhes() {
+    document.getElementById('modalDetalhes').classList.remove('active');
+}
+
+function editarEmp() {
+    fecharModalDetalhes();
+    abrirModalEmp(selectedEmpIndex);
+}
+
+function excluirEmp() {
+    if (confirm('Deseja realmente excluir este empreendimento?')) {
+        empreendimentos.splice(selectedEmpIndex, 1);
+        localStorage.setItem('calOliveirasEmpreendimentos', JSON.stringify(empreendimentos));
+        fecharModalDetalhes();
+        atualizarListaEmpreendimentos();
+    }
+}
+
+document.getElementById('modalEmp').addEventListener('click', fecharModalEmp);
+document.getElementById('modalDetalhes').addEventListener('click', fecharModalDetalhes);
+
+// ========== CONFIGURAÇÕES ==========
+function atualizarConfig() {
+    if (currentUser) {
+        document.getElementById('configNome').textContent = currentUser.name;
+        document.getElementById('configEmail').textContent = currentUser.email;
+    }
+    document.getElementById('configEmpCount').textContent = empreendimentos.length;
+}
+
+function limparDados() {
+    if (confirm('Deseja realmente limpar todos os dados? Esta ação não pode ser desfeita.')) {
+        empreendimentos = [];
+        localStorage.setItem('calOliveirasEmpreendimentos', JSON.stringify(empreendimentos));
+        atualizarListaEmpreendimentos();
+        atualizarHome();
+        atualizarConfig();
+        alert('Dados limpos com sucesso!');
+    }
+}
+
+function sair() {
+    if (confirm('Deseja realmente sair?')) {
+        localStorage.removeItem('calOliveirasUser');
+        currentUser = null;
+        navigateTo('login');
+    }
+}
+</script>
+
 </body>
 </html>
